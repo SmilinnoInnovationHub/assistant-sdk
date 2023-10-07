@@ -40,4 +40,19 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    //exo player
+    api("com.google.android.exoplayer:exoplayer:2.18.3")
+    //signalr
+    api("com.microsoft.signalr:signalr:7.0.0")
+    api("org.slf4j:slf4j-jdk14:1.7.25")
+    //gson
+    api("com.google.code.gson:gson:2.9.0")
+    //retrofit
+    api("com.squareup.retrofit2:retrofit:2.9.0")
+    //gson converter
+    api("com.squareup.retrofit2:converter-gson:2.7.1")
+    //LifeCycle
+    api("androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1")
+    api("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
+
 }
