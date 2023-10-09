@@ -4,15 +4,11 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import android.util.Base64
 import android.util.Log
 import android.view.View
@@ -21,8 +17,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.microsoft.signalr.HubConnectionState
+import com.skydoves.balloon.Balloon
 import com.smilinno.projectlibrary.databinding.ActivityMainBinding
 import com.smilinno.smilinnolibrary.SmilinnoLibrary
+import com.smilinno.smilinnolibrary.callback.SmilinnoListener
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -30,7 +29,6 @@ import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
-import java.util.ArrayList
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -39,65 +37,42 @@ class MainActivity : AppCompatActivity() {
     private var mRecorder: MediaRecorder? = null
     private var audioFilePath: String? = null
     private var timerHasFinished = true
-    private var isRecognizerActivate = false
     private var startRecordTime = 0L
     private val recordDelayTime = 800
-    private var clearContextTime = 0L
-    private var delayClearContext = 5000
-    private var speech: SpeechRecognizer? = null
-    private var recognizerIntent: Intent? = null
-    private var chatId: String? = null
     private lateinit var binding: ActivityMainBinding
-    @Inject
-    lateinit var smilinnoLibrary: SmilinnoLibrary
-    private val base64Message =
-        "//FgQA0f/AFAIoCjemCFLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t\n" +
-                "LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS//8WBADT/8AUAi\n" +
-                "gKN6aIUtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t\n" +
-                "LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS//8WBADR/8AUAigKN6YIUtLS0t\n" +
-                "LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t\n" +
-                "LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tL//xYEANP/wBQCKAo3pohS0tLS0tLS0tLS0tLS0t\n" +
-                "LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t\n" +
-                "LS0tLS0tLS0tLS0tLS0tLS0tL//xYEANP/wBQCKAo3pohS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t\n" +
-                "LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t\n" +
-                "LS0tLS0tLS0tL//xYEANH/wA5jKYgfEKawkpdAgABPGWmv7fJB7/LOeeaqERvNBClpaWlpaWlpaW\n" +
-                "lpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpcH\n" +
-                "//FgQA6//AD8UqhMJDDBAipe7yVKkyotWRKhKsxCLYS488AZyRBgTdPhIZRQiyxpVba8QOseAcCk\n" +
-                "q0VxvwcKllLxXSFpCkBKjHLX3VW8nSSYGfBi2bijISz4ACKwCgJCBZFETM+w+d6/0oQFqAJ2lEpS\n" +
-                "AqBw//FgQBI//AEIm41I+lyNSBBbESkHMhK9yX1757RnPO3VeaTnf2/crnzWf0/2vejGXVf6pU3c\n" +
-                "CnNOuT5nyOxmSqRNQQRHuAG0Dx3mAT+RX+YWyJBigrJ+CBqdHMNuRJREndn13HGapusL5bmdPX2a\n" +
-                "6UohoqrBFBciGKgpAtLiYJChguMsFZZ4NlJ5nk91IyoAB//xYEAQ3/wBIvKH4CMam7zuUy9bXk1W\n" +
-                "StG9Tdd3O9tYOxEj88TCg08IrUxJWa7c80aY72trbZRSyYVr3IUZPD3xql9qn3C60rqG4zAKbTNm\n" +
-                "KTB0vjs5mKPkw3DHE7ltxiZP0eC1pWJs/+DeXdBFzeRSsY6XaTDL/1Ru/8fbzopa0WDWAAMH//Fg\n" +
-                "QA/f/AEuMoRQJFjZ65lXlCQlJFRC+jPEvMawdFyI54yk1CTbDVlUAz4CEhiOy/lXbqdaV/P5kKt/\n" +
-                "duJLawEmWSryxbEvxnDJeL+2x/TWlGEVrxKQ2ypp+8NHz+SUWpJWghJIABeScoCwlr/nUdCFQWw5\n" +
-                "1QAQhd8HUoA4//FgQA///AFUMozsEA0MQsRToEVAIIqTOMayUSZLquHw36mgHgh/2YyZ44oHBZ69\n" +
-                "Kj4okR8n+j1F+i2vilbgB2f13YsyIAH/Xo4Mw19/v93aAANRjOYC6SCdVACPR2oKn7asEygvvAC6\n" +
-                "QVrJNctewCeHHK/j+FLdcs4Gud4gcP/xYEANn/wBNDKeQwAZ+yJUVJUVYXlpeq08UBIX34B997wD\n" +
-                "W67/BoQiss/6fzPNzTTHG/Qfd2TlN4x1XL4chl1Wnz7ZC/BLC8d+wYsw+1SnIY/UKfcy+KKXgzAK\n" +
-                "oGFjQIiGoAABGnxgjhiDB//xYEANH/wBVDKVNBENBUkCGADAul5qqkXtNbIvzrO8AAdMAW9oF66M\n" +
-                "SFMKxn6mpGT5X2pqEFb8u6A3vr/hmLNffVla1pwXKobSou8wDlqGeAqSYwxjPUawQUBURAgNQQEo\n" +
-                "EvpMZZjg//FgQA0//AFYMo0QhBAMWgN8e6LTdxi8fEwvXWs8LWwRZBF5fIjf/APA9TFpt1E453OB\n" +
-                "QtN32u1IWcab8Roo7nAITSGSFzoS2J80S3A9JHnkRVCy10RO5hFUYnRtEgChOQgKVBcrUoDg//Fg\n" +
-                "QA2//AFEMpyQhiGwBiMBtbWSlSIDzTcvfSAF1l874tyU5NCNIimWpIoiA5LwkamSzRdYsNNHBo2u\n" +
-                "rJmgK83gwskFh5Kca6xdsaJKoF57nYlvfSq3CtxIT5S5pSMpOCSJEqAwpWmEEFABwP/xYEANX/wB\n" +
-                "PjKVTDESDGa8RBUglX08vVxryrur9sAE47v/n25BV65SJfGtSOfTjfYI1OjfNwwcirIgc1Pswi8V\n" +
-                "DmdhqmoGAAiEjqpKcKhqXVKTGIiACNYAEgF4GmgCKm8qsCLLNFwkAHA="
+    @Inject lateinit var smilinnoLibrary: SmilinnoLibrary
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.send.setOnClickListener {
-            smilinnoLibrary.sendVoiceMessage(base64Message)
-        }
-        binding.send.setOnClickListener {
-            smilinnoLibrary.setTextMessage(binding.editText.text.toString())
-        }
+
+        bindText()
+
+        smilinnoLibrary.setSmilinnoCallBack(object : SmilinnoListener {
+
+            override fun onMessageReceive(message: String) {
+                Log.e("3535", "onMessageReceive: $message", )
+            }
+
+            override fun onMessageError(e: Exception) {
+                Log.e("3535", "onMessageError: $e", )
+            }
+
+            override fun onConnectionStateChange(connectionState: HubConnectionState) {
+                Log.e("3535", "onStateConnection: ${connectionState.name}", )
+            }
+
+        })
 //        bindAssistant()
     }
 
+    private fun bindText() {
+        binding.send.setOnClickListener {
+            smilinnoLibrary.setTextMessage(binding.editText.text.toString())
+        }
+    }
 
 
     @RequiresApi(Build.VERSION_CODES.M)

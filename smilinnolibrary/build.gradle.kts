@@ -51,8 +51,5 @@ dependencies {
     api("com.squareup.retrofit2:retrofit:2.9.0")
     //gson converter
     api("com.squareup.retrofit2:converter-gson:2.7.1")
-    //LifeCycle
-    api("androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1")
-    api("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
 
 }

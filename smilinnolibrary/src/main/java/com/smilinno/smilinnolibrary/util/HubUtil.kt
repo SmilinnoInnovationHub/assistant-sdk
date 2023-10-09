@@ -1,8 +1,7 @@
 package com.smilinno.smilinnolibrary.util
 
+import android.annotation.SuppressLint
 import android.util.Log
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.microsoft.signalr.HubConnection
@@ -10,21 +9,26 @@ import com.microsoft.signalr.HubConnectionBuilder
 import com.microsoft.signalr.HubConnectionState
 import com.microsoft.signalr.TransportEnum
 import com.smilinno.smilinnolibrary.apistate.ApiState
+import com.smilinno.smilinnolibrary.callback.SmilinnoListener
 import com.smilinno.smilinnolibrary.model.Chat
 import com.smilinno.smilinnolibrary.model.CreatedDate
 import com.smilinno.smilinnolibrary.model.ResponseChatId
 import com.smilinno.smilinnolibrary.model.type.ChatType
 import com.smilinno.smilinnolibrary.model.type.DeliverType
 import io.reactivex.rxjava3.observers.DisposableCompletableObserver
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 
-internal object HubUtil : ViewModel() {
+internal object HubUtil {
     private lateinit var hubConnection: HubConnection
+    var smilinnoListener: SmilinnoListener? = null
+        set(value) {
+            field = value
+            sendConnectionState()
+        }
     private val ACCESS_TOKEN_KEY = "access_token"
     private val TEXTMESSAGE = "TextMessage"
     private val CLEARCONTEXT = "ClearContext"
@@ -33,16 +37,15 @@ internal object HubUtil : ViewModel() {
     private val AttachChatId = "AttachChatId"
     private val STOPMESSAGE = "StopMessage"
     private val VOICEMESSAGE = "UserMessage"
-
     private val MESSAGE = "Message"
-//  private val MESSAGE = "UnRelated"
-
+    // private val MESSAGE = "Message"
+    // private val MESSAGE = "UserMessage"
+    // private val MESSAGE = "UnRelated"
     private val UNAUTHORIZED = "Unauthorized"
     private val FORBIDDEN = "Forbidden"
     private val ADVERTISEMENT = "Advertisment"
     private val GENERATEIMAGE = "GenerateImage"
     const val ITEMS_PER_PAGE = 10
-    const val FIRST_PAGE: Int = 1
     const val REQUEST_HISTORY_MESSAGE = "SendUserChatHistory"//todo
     const val RESPONSE_HISTORY_MESSAGE = "GetUserChatHistory"
     var pageSize: Int = ITEMS_PER_PAGE
@@ -63,43 +66,44 @@ internal object HubUtil : ViewModel() {
     private val chatHistoryStateFlow: MutableStateFlow<ApiState> = MutableStateFlow(ApiState.Empty)
     val _chatHistoryStateFlow: StateFlow<ApiState> = chatHistoryStateFlow
 
-    private val deleteHistoryStateFlow: MutableStateFlow<ApiState> = MutableStateFlow(ApiState.Empty)
+    private val deleteHistoryStateFlow: MutableStateFlow<ApiState> =
+        MutableStateFlow(ApiState.Empty)
     val _deleteHistoryStateFlow: StateFlow<ApiState> = deleteHistoryStateFlow
 
 
     fun initSignalRHubConnection(token: String) {
-            try {
-                hubConnection = HubConnectionBuilder
+        try {
+            hubConnection = HubConnectionBuilder
 //                http://37.32.24.190:9104/chathub_v1_5
 //                https://assistant.smilinno-dev.com/hub
-                    .create("http://37.32.24.190:9104/chathub_v1_5")
-                    .withHeader(ACCESS_TOKEN_KEY, token)
-                    .shouldSkipNegotiate(true)
-                    .withHandshakeResponseTimeout(15 * 1000)
-                    .withTransport(TransportEnum.WEBSOCKETS)
-                    .build()
-                hubConnection.serverTimeout = 30 * 1000
-                hubConnection.keepAliveInterval = 10 * 1000
-                hubConnection.onClosed {
-                    Log.e(TAG, "hubConnection is closed!", it)
-                    sendConnectionState()
-                    startHubConnection()
-                }
-                getTextFromServer()
-                getAcknowledgeFromServer()
-                getChatIdFromServer()
-                getAdvertisementFromServer()
-                getForbiddenFromServer()
-                getUnauthorizedFromServer()
-                listenToGetHistory()
-            } catch (e: java.lang.Exception) {
-                Log.e(TAG, "initSignalRHubConnection exception:", e)
+                .create("http://37.32.24.190:9104/chathub_v1_5")
+                .withHeader(ACCESS_TOKEN_KEY, token)
+                .shouldSkipNegotiate(true)
+                .withHandshakeResponseTimeout(15 * 1000)
+                .withTransport(TransportEnum.WEBSOCKETS)
+                .build()
+            hubConnection.serverTimeout = 30 * 1000
+            hubConnection.keepAliveInterval = 10 * 1000
+            hubConnection.onClosed {
+                Log.e(TAG, "hubConnection is closed!", it)
+                sendConnectionState()
+                startHubConnection()
             }
+            getTextFromServer()
+            getAcknowledgeFromServer()
+            getChatIdFromServer()
+            getAdvertisementFromServer()
+            getForbiddenFromServer()
+            getUnauthorizedFromServer()
+            listenToGetHistory()
+        } catch (e: java.lang.Exception) {
+            Log.e(TAG, "initSignalRHubConnection exception:", e)
+        }
 
     }
 
     fun startHubConnection() {
-        viewModelScope.launch(Dispatchers.IO) {
+
             try {
                 hubConnection.start().subscribe(object : DisposableCompletableObserver() {
                     override fun onComplete() {
@@ -110,17 +114,17 @@ internal object HubUtil : ViewModel() {
                     }
 
                     override fun onError(e: Throwable) {
-                        viewModelScope.launch {
                             sendConnectionState()
-                            delay(5000)
+//                            delay(5000)
+                        Executors.newSingleThreadScheduledExecutor().schedule({
                             startHubConnection()
-                        }
+                        }, 5, TimeUnit.SECONDS)
                     }
                 })
             } catch (e: java.lang.Exception) {
                 Log.e(TAG, "hubConnection start: ", e)
             }
-        }
+
     }
 
     fun isConnected(): Boolean {
@@ -132,12 +136,7 @@ internal object HubUtil : ViewModel() {
     }
 
     fun sendConnectionState() {
-        return if (this::hubConnection.isInitialized) {
-            connectionStateFlow.value =
-                ApiState.Success(hubConnection.connectionState == HubConnectionState.CONNECTED)
-        } else {
-            connectionStateFlow.value = ApiState.Success(false)
-        }
+       smilinnoListener?.onConnectionStateChange(hubConnection.connectionState)
     }
 
     private fun getUnauthorizedFromServer() {
@@ -162,7 +161,7 @@ internal object HubUtil : ViewModel() {
 
     private fun getChatIdFromServer() {
         try {
-            hubConnection.on(AttachChatId, { requestId: String, chatId : String ->
+            hubConnection.on(AttachChatId, { requestId: String, chatId: String ->
                 chatStateFlow.value = ApiState.Success(ResponseChatId(requestId, chatId))
             }, String::class.java, String::class.java)
         } catch (e: java.lang.Exception) {
@@ -183,11 +182,12 @@ internal object HubUtil : ViewModel() {
     private fun getTextFromServer() {
         try {
             hubConnection.on(MESSAGE, { message: String ->
-                viewModelScope.launch {
                     Log.d(TAG, "hubConnection on ARG_MESSAGE: $message")
-                }
+                    smilinnoListener?.onMessageReceive(message)
+
             }, String::class.java)
         } catch (e: java.lang.Exception) {
+            smilinnoListener?.onMessageError(e)
             Log.e(TAG, "hubConnection on: ", e)
         }
     }
@@ -206,7 +206,7 @@ internal object HubUtil : ViewModel() {
 
     fun sendLastChatId() {
         if (lastServerMessageId.isNotEmpty()) {
-            viewModelScope.launch(Dispatchers.IO) {
+
                 if (isConnected()) {
                     try {
                         Log.d(TAG, "hubConnection resend! $lastServerMessageId")
@@ -215,15 +215,15 @@ internal object HubUtil : ViewModel() {
                         Log.e(TAG, "hubConnection send error: ", e)
                     }
                 }
-            }
+
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     fun sendStopMessage() {
         ignorServerMessage = true
         if (lastServerMessageId.isNotEmpty()) {
             ignorServerMessageId = lastServerMessageId
-            viewModelScope.launch(Dispatchers.IO) {
                 if (isConnected()) {
                     try {
                         Log.d(TAG, "hubConnection StopMessage! $lastServerMessageId")
@@ -232,17 +232,19 @@ internal object HubUtil : ViewModel() {
                         Log.e(TAG, "hubConnection send error: ", e)
                     }
                 }
-            }
+
         }
     }
 
     fun sendVoiceChat(voiceBase64String: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+
             lastServerMessageId = ""
             chatStateFlow.value = ApiState.Loading
             if (!isConnected()) {
-                delay(1000)
-                sendVoiceChat(voiceBase64String)
+//                delay(1000)
+                Executors.newSingleThreadScheduledExecutor().schedule({
+                 sendVoiceChat(voiceBase64String)
+                }, 1, TimeUnit.SECONDS)
             } else {
                 try {
                     Log.d(TAG, "hubConnection sent!")
@@ -251,7 +253,7 @@ internal object HubUtil : ViewModel() {
                     Log.e(TAG, "hubConnection send error: ", e)
                 }
             }
-        }
+
     }
 
     fun sendChat(text: String) {
@@ -269,10 +271,13 @@ internal object HubUtil : ViewModel() {
     }
 
     fun sendClearContextChat() {
-        viewModelScope.launch(Dispatchers.IO) {
+
             if (!isConnected()) {
-                delay(1000)
+//                delay(1000)
+                Executors.newSingleThreadScheduledExecutor().schedule({
                 sendClearContextChat()
+                }, 1, TimeUnit.SECONDS)
+
             } else {
                 try {
                     Log.d(TAG, "hubConnection sent ClearContext!")
@@ -281,16 +286,17 @@ internal object HubUtil : ViewModel() {
                     Log.e(TAG, "hubConnection send error: ", e)
                 }
             }
-        }
+
     }
 
 
     fun sendTextChat(text: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+
             chatStateFlow.value = ApiState.Loading
             if (!isConnected()) {
-                delay(1000)
-                sendTextChat(text)
+//                delay(1000)
+            smilinnoListener?.onMessageError(Exception("Server ${hubConnection.connectionState}"))
+
             } else {
                 try {
                     Log.d(TAG, "hubConnection sent!")
@@ -302,15 +308,18 @@ internal object HubUtil : ViewModel() {
                     Log.e(TAG, "hubConnection send error: ", e)
                 }
             }
-        }
+
     }
 
     private fun sendGenerateImage(text: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+
             chatStateFlow.value = ApiState.Loading
             if (!isConnected()) {
-                delay(1000)
-                sendGenerateImage(text)
+//                delay(1000)
+                Executors.newSingleThreadScheduledExecutor().schedule({
+                    sendGenerateImage(text)
+                }, 1, TimeUnit.SECONDS)
+
             } else {
                 try {
                     Log.d(TAG, "hubConnection sent!")
@@ -322,7 +331,7 @@ internal object HubUtil : ViewModel() {
                     Log.e(TAG, "hubConnection send error: ", e)
                 }
             }
-        }
+
     }
 
     private fun getClientChat(text: String): Chat {
@@ -335,6 +344,41 @@ internal object HubUtil : ViewModel() {
             createdOn = createdDate
         )
     }
+
+    private fun parsObjectIntoChat(jsonString: String): Chat? {
+        val gson = Gson()
+        val chat = gson.fromJson(jsonString, Array<Chat>::class.java)[0]
+        when (chat.type) {
+            "error" -> {
+                chat.isAssistant = true
+                chat.isError = true
+            }
+
+            "server" -> {
+                chat.isAssistant = true
+            }
+
+            "user" -> {
+                chat.isAssistant = false
+            }
+
+            "clearcontext" -> {
+                chat.responseType = ChatType.CLEAR_CONTEXT
+                chat.isAssistant = true
+            }
+        }
+        chat.createdOn?.raw?.let {
+            TimeUtils.parseTime(it)?.time?.let { time ->
+                chat.time = time
+            }
+        }
+        return if (chat.isAssistant) {
+            chat
+        } else {
+            null
+        }
+    }
+
     private fun parsObjectIntoChatList(jsonString: String): ArrayList<Chat> {
         val gson = Gson()
         val list: ArrayList<Chat> =
@@ -353,6 +397,7 @@ internal object HubUtil : ViewModel() {
                 "user" -> {
                     chat.isAssistant = false
                 }
+
                 "clearcontext" -> {
                     chat.responseType = ChatType.CLEAR_CONTEXT
                     chat.isAssistant = true
@@ -372,7 +417,7 @@ internal object HubUtil : ViewModel() {
 
     fun requestToGetHistory(pageId: String?, pageSize: Int?) {
         Log.d(TAG, "requestToGetHistory! pageId $pageId to $pageSize")
-        viewModelScope.launch(Dispatchers.IO) {
+
             Log.d(TAG, "requestToGetHistory! IO")
             if (isConnected()) {
                 Log.d(TAG, "requestToGetHistory! hub connected")
@@ -385,11 +430,11 @@ internal object HubUtil : ViewModel() {
                     chatHistoryStateFlow.value = ApiState.Failure(e)
                 }
             }
-        }
+
     }
 
     private fun listenToGetHistory() {
-        viewModelScope.launch {
+
             try {
                 hubConnection.on(RESPONSE_HISTORY_MESSAGE, { message: String ->
                     Log.d(TAG, "hubConnection on listenToGetHistory: $message")
@@ -408,7 +453,7 @@ internal object HubUtil : ViewModel() {
                 chatHistory = null
                 chatHistoryStateFlow.value = ApiState.Failure(e)
             }
-        }
+
     }
 
 }

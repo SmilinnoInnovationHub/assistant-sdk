@@ -1,16 +1,8 @@
 package com.smilinno.smilinnolibrary
 
 import android.content.Context
-import android.view.TextureView
-import android.view.View
-import android.widget.TextView
-import com.smilinno.smilinnolibrary.apistate.ApiState
-import com.smilinno.smilinnolibrary.model.Chat
+import com.smilinno.smilinnolibrary.callback.SmilinnoListener
 import com.smilinno.smilinnolibrary.util.HubUtil
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 
 class SmilinnoLibrary private constructor(private val builder: Builder) {
     fun sendVoiceMessage(base64Message: String) {
@@ -19,6 +11,10 @@ class SmilinnoLibrary private constructor(private val builder: Builder) {
 
     fun setTextMessage(text: String) {
         HubUtil.sendTextChat(text)
+    }
+
+    fun setSmilinnoCallBack(smilinnoListener : SmilinnoListener) {
+        HubUtil.smilinnoListener = smilinnoListener
     }
 
     var token: String
