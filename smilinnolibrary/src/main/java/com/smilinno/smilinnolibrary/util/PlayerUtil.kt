@@ -12,7 +12,7 @@ import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
-import com.smilinno.smilinnolibrary.SmilinnoLibrary
+import com.smilinno.smilinnolibrary.callback.PlayerListener
 
 internal object PlayerUtil {
 
@@ -37,6 +37,7 @@ internal object PlayerUtil {
                 override fun onPlayerError(error: PlaybackException) {
                     super.onPlayerError(error)
                     exoPlayer?.prepare()
+                    isPlaying = false
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -72,18 +73,12 @@ internal object PlayerUtil {
         }
     }
 
-    interface PlayerListener {
-        fun onStopped()
-    }
-
-    fun playTTS(context: Context, smilinnoLibrary: SmilinnoLibrary, voice: String, playerListener: PlayerListener) {
-        if (smilinnoLibrary.ttsEnabled) {
+    fun playTTS(context: Context, voice: String, playerListener: PlayerListener) {
             if (isPlaying) {
                 releasePlayer()
             } else {
                 playVoice(context, voice, playerListener)
             }
-        }
     }
 
 }

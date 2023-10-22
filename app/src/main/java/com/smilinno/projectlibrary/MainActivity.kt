@@ -18,11 +18,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.microsoft.signalr.HubConnectionState
-import com.skydoves.balloon.Balloon
 import com.smilinno.projectlibrary.databinding.ActivityMainBinding
-import com.smilinno.smilinnolibrary.SmilinnoLibrary
+import com.smilinno.smilinnolibrary.AssistantLibrary
 import com.smilinno.smilinnolibrary.callback.SmilinnoListener
+import com.smilinno.smilinnolibrary.model.MessageResponse
+import com.smilinno.smilinnolibrary.model.MessageType
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
@@ -33,6 +35,7 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    private val TAG: String = MainActivity::class.java.name
     private val REQUEST_RECORD_PERMISSION = 100
     private var mRecorder: MediaRecorder? = null
     private var audioFilePath: String? = null
@@ -40,7 +43,9 @@ class MainActivity : AppCompatActivity() {
     private var startRecordTime = 0L
     private val recordDelayTime = 800
     private lateinit var binding: ActivityMainBinding
-    @Inject lateinit var smilinnoLibrary: SmilinnoLibrary
+    @Inject
+    lateinit var assistantLibrary: AssistantLibrary
+    private var voice: String? = null
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,36 +54,78 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         bindText()
+        bindAssistant()
+        showCallBack()
+    }
 
-        smilinnoLibrary.setSmilinnoCallBack(object : SmilinnoListener {
+    private fun showCallBack() {
+        assistantLibrary.setSmilinnoCallBack(object : SmilinnoListener {
+            override fun onMessageReceive(message: MessageResponse) {
+                Log.e(TAG, "onMessageReceive: $message")
+                lifecycleScope.launch(Dispatchers.Main) {
+                    voice = message.voice
+                    when (message.type) {
+                        MessageType.MESSAGE -> {
+                            binding.textView.text =
+                                "${MessageType.MESSAGE.name} : ${message.text}"
+                        }
 
-            override fun onMessageReceive(message: String) {
-                Log.e("3535", "onMessageReceive: $message", )
+                        MessageType.UNRELATED -> {
+                            binding.textView2.text =
+                                "${MessageType.UNRELATED.name} : ${message.text}"
+                        }
+
+                        MessageType.PAYINGTHEBILL -> {
+                            binding.textView2.text =
+                                "${MessageType.PAYINGTHEBILL.name} : ${message.text}"
+                        }
+
+                        MessageType.ACCOUNTBILL -> {
+                            binding.textView2.text =
+                                "${MessageType.ACCOUNTBILL.name} : ${message.text}"
+                        }
+
+                        MessageType.MONEYTRANSFER -> {
+                            binding.textView2.text =
+                                "${MessageType.MONEYTRANSFER.name} : ${message.text}"
+                        }
+
+                        MessageType.ACCOUNTBALANCE -> {
+                            binding.textView2.text =
+                                "${MessageType.ACCOUNTBALANCE.name} : ${message.text}"
+                        }
+
+                        else -> {}
+                    }
+                }
             }
 
             override fun onMessageError(e: Exception) {
-                Log.e("3535", "onMessageError: $e", )
+                Log.e(TAG, "onMessageError: $e")
             }
 
             override fun onConnectionStateChange(connectionState: HubConnectionState) {
-                Log.e("3535", "onStateConnection: ${connectionState.name}", )
+                Log.e(TAG, "onStateConnection: ${connectionState.name}")
+                lifecycleScope.launch(Dispatchers.Main) {
+                    binding.state.text = connectionState.name
+                }
             }
 
         })
-//        bindAssistant()
     }
 
     private fun bindText() {
         binding.send.setOnClickListener {
-            smilinnoLibrary.setTextMessage(binding.editText.text.toString())
+            assistantLibrary.setTextMessage(binding.editText.text.toString())
         }
     }
 
 
     @RequiresApi(Build.VERSION_CODES.M)
     @SuppressLint("ClickableViewAccessibility")
-    private fun bindAssistant() = with(binding.send) {
+    private fun bindAssistant() = with(binding.sendVoice) {
         setOnClickListener {
+            binding.editText.setText("")
             if (checkRecordAudioPermissionRequest()) {
                 recorderAssistant()
             }
@@ -107,7 +154,7 @@ class MainActivity : AppCompatActivity() {
                 mRecorder = null
             }
         } catch (e: java.lang.Exception) {
-            Log.e("", "releaseRecorder: ", e)
+            Log.e(TAG, "releaseRecorder: ", e)
         }
     }
 
@@ -134,7 +181,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopMic() {
         if (isRecordAudioPermissionGranted()) {
-            binding.micAnimationContainer.visibility = View.GONE
+            binding.micAnimationContainer.visibility = View.INVISIBLE
             if (System.currentTimeMillis() < startRecordTime + recordDelayTime) {
                 lifecycleScope.launch {
                     cTimer?.cancel()
@@ -151,7 +198,7 @@ class MainActivity : AppCompatActivity() {
                     audioBase64 = getAudioBase64()
                 }
                 if (audioBase64 != null) {
-                    smilinnoLibrary.sendVoiceMessage(audioBase64)
+                    assistantLibrary.sendVoiceMessage(audioBase64)
                 }
             }
         }
@@ -165,7 +212,7 @@ class MainActivity : AppCompatActivity() {
 
         override fun onFinish() {
             timerHasFinished = true
-            binding.micAnimationContainer.visibility = View.GONE
+            binding.micAnimationContainer.visibility = View.INVISIBLE
             stopMic()
         }
     }
