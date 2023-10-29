@@ -65,6 +65,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         bindGoogle()
     }
 
+    //* Binds the button to the Google ASR function.
     @RequiresApi(Build.VERSION_CODES.M)
     private fun bindGoogle() {
         binding.sendGoogle.setOnClickListener {
@@ -74,6 +75,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Starts or stops the recognizer.
     private fun googleASR() {
         initRecognizer()
         isRecognizerActivate = if (!isRecognizerActivate) {
@@ -85,6 +87,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Initializes the recognizer and sets the recognizer intent.
     private fun initRecognizer() {
         if (speech == null) {
             speech = SpeechRecognizer.createSpeechRecognizer(this)
@@ -99,6 +102,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Shows the call back.
     private fun showCallBack() {
         assistantLibrary.setSmilinnoCallBack(object : SmilinnoListener {
             @SuppressLint("SetTextI18n")
@@ -156,6 +160,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         })
     }
 
+    //Binds the send button to the assistant library.
     private fun bindText() {
         binding.send.setOnClickListener {
             assistantLibrary.setTextMessage(binding.editText.text.toString())
@@ -163,6 +168,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
     }
 
 
+    // Binds the assistant to the view.
     @RequiresApi(Build.VERSION_CODES.M)
     @SuppressLint("ClickableViewAccessibility")
     private fun bindAssistant() = with(binding.sendVoice) {
@@ -174,6 +180,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Handles the recording of the audio.
     private fun recorderAssistant() {
         if (timerHasFinished) {
             releaseRecorder()
@@ -187,6 +194,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Releases the recorder.
     private fun releaseRecorder() {
         try {
             if (mRecorder != null) {
@@ -200,6 +208,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Initializes the MediaRecorder object.
     private fun initMediaRecorder() {
         audioFilePath = this
             .getExternalFilesDir(null)?.absolutePath + "/" + "zich.3gp"
@@ -221,6 +230,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Stops the microphone and sends the audio to the assistant.
     private fun stopMic() {
         if (isRecordAudioPermissionGranted()) {
             binding.micAnimationContainer.visibility = View.INVISIBLE
@@ -246,6 +256,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //A countdown timer that is used to stop the microphone after a certain amount of time.
     private var cTimer: CountDownTimer? = object :
         CountDownTimer(11000, 1000) {
         override fun onTick(millisUntilFinished: Long) {
@@ -259,6 +270,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Checks if the RECORD_AUDIO permission is granted.
     private fun isRecordAudioPermissionGranted(): Boolean {
         return (ContextCompat.checkSelfPermission(
             this,
@@ -267,12 +279,14 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
                 == PackageManager.PERMISSION_GRANTED)
     }
 
+    //Gets the audio as a base64 string.
     private fun getAudioBase64(): String? {
         val inputStream: InputStream = FileInputStream(audioFilePath)
         val myByteArray = getBytesFromInputStream(inputStream)
         return Base64.encodeToString(myByteArray, Base64.DEFAULT)
     }
 
+    //Gets the bytes from an input stream.
     @Throws(IOException::class)
     private fun getBytesFromInputStream(`is`: InputStream): ByteArray? {
         val os = ByteArrayOutputStream()
@@ -286,6 +300,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
     }
 
 
+    //Checks if the record audio permission is granted. If it is, continues running the app. If it is not, shows an alert dialog and then makes a permission request.
     @RequiresApi(Build.VERSION_CODES.M)
     private fun checkRecordAudioPermissionRequest(): Boolean {
         return if (isRecordAudioPermissionGranted()) {
@@ -301,6 +316,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         }
     }
 
+    //Shows an alert dialog to the user asking for permission to access the microphone.
     private fun showAlertDialog(context: Context?) {
         val alertDialogBuilder = AlertDialog.Builder(context)
         alertDialogBuilder.setMessage("voice_permission")
@@ -314,6 +330,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         alertDialog.show()
     }
 
+    //Makes a permission request to record audio.
     private fun makePermissionRequest() {
         ActivityCompat.requestPermissions(
             this,
@@ -376,6 +393,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
 
     }
 
+    //Makes a permission request to record audio.
     private fun getErrorText(errorCode: Int): String {
         val message: String = when (errorCode) {
             SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
