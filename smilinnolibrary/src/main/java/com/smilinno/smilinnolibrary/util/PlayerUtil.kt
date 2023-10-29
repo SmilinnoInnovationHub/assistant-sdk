@@ -20,6 +20,7 @@ internal object PlayerUtil {
     var isPlaying = false
     private var playerListener: PlayerListener? = null
 
+    //Plays a voice message.
     fun playVoice(context: Context, url: String?, playerListener: PlayerListener) {
         if (url != null) {
             PlayerUtil.playerListener = playerListener
@@ -30,6 +31,7 @@ internal object PlayerUtil {
         }
     }
 
+    //Initializes the ExoPlayer with the given URI
     private fun initialExoPlayer(context: Context, uri: Uri) {
         if (exoPlayer == null) {
             exoPlayer = ExoPlayer.Builder(context).build()
@@ -57,6 +59,7 @@ internal object PlayerUtil {
         exoPlayer?.play()
     }
 
+    //Gets the audio media source.
     private fun getAudioMediaSource(context: Context, uri: Uri): MediaSource {
         val dataFactory: DataSource.Factory =
             DefaultDataSource.Factory(context)
@@ -65,6 +68,7 @@ internal object PlayerUtil {
             .createMediaSource(MediaItem.fromUri(uri))
     }
 
+    // Releases the player and resets the state.
     fun releasePlayer() {
         isPlaying = false
         if (exoPlayer != null) {
@@ -73,6 +77,7 @@ internal object PlayerUtil {
         }
     }
 
+    //Plays a TTS message. If a message is already playing, it will be released and the new message will be played
     fun playTTS(context: Context, voice: String, playerListener: PlayerListener) {
             if (isPlaying) {
                 releasePlayer()

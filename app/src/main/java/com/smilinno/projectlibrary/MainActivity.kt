@@ -4,11 +4,15 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.util.Base64
 import android.util.Log
 import android.view.View
@@ -34,7 +38,7 @@ import java.io.InputStream
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() , RecognitionListener {
     private val TAG: String = MainActivity::class.java.name
     private val REQUEST_RECORD_PERMISSION = 100
     private var mRecorder: MediaRecorder? = null
@@ -43,9 +47,11 @@ class MainActivity : AppCompatActivity() {
     private var startRecordTime = 0L
     private val recordDelayTime = 800
     private lateinit var binding: ActivityMainBinding
-    @Inject
-    lateinit var assistantLibrary: AssistantLibrary
+    @Inject lateinit var assistantLibrary: AssistantLibrary
     private var voice: String? = null
+    private var isRecognizerActivate = false
+    private var recognizerIntent: Intent? = null
+    private var speech: SpeechRecognizer? = null
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,10 +62,46 @@ class MainActivity : AppCompatActivity() {
         bindText()
         bindAssistant()
         showCallBack()
+        bindGoogle()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun bindGoogle() {
+        binding.sendGoogle.setOnClickListener {
+            if (checkRecordAudioPermissionRequest()) {
+                googleASR()
+            }
+        }
+    }
+
+    private fun googleASR() {
+        initRecognizer()
+        isRecognizerActivate = if (!isRecognizerActivate) {
+            speech?.startListening(recognizerIntent)
+            true
+        } else {
+            speech?.stopListening()
+            false
+        }
+    }
+
+    private fun initRecognizer() {
+        if (speech == null) {
+            speech = SpeechRecognizer.createSpeechRecognizer(this)
+            speech?.setRecognitionListener(this)
+            recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            recognizerIntent?.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "fa")
+            recognizerIntent?.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa")
+            recognizerIntent?.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            recognizerIntent?.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            recognizerIntent?.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            recognizerIntent?.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, this.application.packageName)
+        }
     }
 
     private fun showCallBack() {
         assistantLibrary.setSmilinnoCallBack(object : SmilinnoListener {
+            @SuppressLint("SetTextI18n")
             override fun onMessageReceive(message: MessageResponse) {
                 Log.e(TAG, "onMessageReceive: $message")
                 lifecycleScope.launch(Dispatchers.Main) {
@@ -278,6 +320,83 @@ class MainActivity : AppCompatActivity() {
             arrayOf(Manifest.permission.RECORD_AUDIO),
             REQUEST_RECORD_PERMISSION
         )
+    }
+
+    override fun onReadyForSpeech(params: Bundle?) {
+        binding.micAnimation2.playAnimation()
+        binding.micAnimationContainer2.visibility = View.VISIBLE
+
+    }
+
+    override fun onBeginningOfSpeech() {}
+
+    override fun onRmsChanged(rmsdB: Float) {}
+
+    override fun onBufferReceived(buffer: ByteArray?) {}
+
+    override fun onEndOfSpeech() {
+        binding.micAnimation2.pauseAnimation()
+        binding.micAnimationContainer2.visibility = View.INVISIBLE
+
+    }
+
+    override fun onError(error: Int) {
+        isRecognizerActivate = false
+        binding.micAnimation2.pauseAnimation()
+        binding.micAnimationContainer2.visibility = View.INVISIBLE
+        val errorMessage = getErrorText(error)
+        Log.d(MainActivity::class.java.name, "FAILED: $errorMessage")
+    }
+
+    override fun onResults(results: Bundle?) {
+        if (isRecognizerActivate) {
+            results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let {
+                if (it.isNotEmpty()) {
+                    binding.textViewGoogle.setText(it[0])
+                }
+            }
+        }
+        binding.micAnimation2.pauseAnimation()
+        binding.micAnimationContainer2.visibility = View.INVISIBLE
+        isRecognizerActivate = false
+
+    }
+
+    override fun onPartialResults(partialResults: Bundle?) {
+        if (isRecognizerActivate) {
+            var text = ""
+            partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let {
+                for (result in it) text += result.plus(" ")
+            }
+            binding.textViewGoogle.setText(text)
+        }
+    }
+
+    override fun onEvent(eventType: Int, params: Bundle?) {
+
+    }
+
+    private fun getErrorText(errorCode: Int): String {
+        val message: String = when (errorCode) {
+            SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
+            SpeechRecognizer.ERROR_CLIENT -> "Client side error"
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
+            SpeechRecognizer.ERROR_NETWORK -> "Network error"
+            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+            SpeechRecognizer.ERROR_NO_MATCH -> "No match"
+            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "RecognitionService busy"
+            SpeechRecognizer.ERROR_SERVER -> "Error from server"
+            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech input"
+            else -> "Didn't understand, please try again."
+        }
+        return message
+    }
+
+    override fun onStop() {
+        speech?.destroy()
+        speech = null
+        recognizerIntent = null
+        super.onStop()
     }
 
 }

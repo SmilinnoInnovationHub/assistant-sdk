@@ -9,18 +9,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 class AssistantLibrary private constructor(private val builder: Builder) {
+
+    //Sends a voice message to the hub.
     fun sendVoiceMessage(base64Message: String) {
         HubUtil.sendVoiceChat(base64Message)
     }
 
+    // Send a text chat message to the Hub.
     fun setTextMessage(text: String) {
         HubUtil.sendTextChat(text)
     }
 
+    // Set the Smilinno listener to the HubUtil.
     fun setSmilinnoCallBack(smilinnoListener : SmilinnoListener) {
         HubUtil.smilinnoListener = smilinnoListener
     }
 
+    // A variables to store.
     var token: String
     var client_id: String? = null
     var publisher: String = "sdk"
@@ -35,19 +40,24 @@ class AssistantLibrary private constructor(private val builder: Builder) {
         private var retryConnection : Long? = null
 
 
+        // Sets the variables to the given value.
         fun setToken(token: String) = apply { this.token = token }
         fun setClientId(clientId: String) = apply { this.client_id = clientId }
         fun setPublisher(publisher: String) = apply { this.publisher = publisher }
         fun setRetryConnectionTime(time : Long) = apply { this.retryConnection = time }
         fun isTtsEnabled(ttsStatus: Boolean) = apply { this.ttsEnabled = ttsStatus }
+
+        // This functions returns the current variables
         fun getToken() = token
         fun getClientId() = client_id
         fun getPublisher() = publisher
         fun getTtsEnabled() = ttsEnabled
         fun getRetryConnectionTime() = retryConnection
 
+        // Initialize the SignalR hub connection with the specified token and retry connection .
         private fun bindSocket() {
             HubUtil.initSignalRHubConnection(token,retryConnection) {
+                // If TTS is enabled, play the received message using TTS.
                 if (ttsEnabled) {
                     runBlocking(Dispatchers.Main) {
                         PlayerUtil.playTTS(context, it, object : PlayerListener {
@@ -59,6 +69,7 @@ class AssistantLibrary private constructor(private val builder: Builder) {
 
                 }
             }
+            // If the hub connection is not connected, start it.
             if (!HubUtil.isConnected())
                 HubUtil.startHubConnection()
         }

@@ -1,7 +1,6 @@
 package com.smilinno.smilinnolibrary.callback
 
-import com.microsoft.signalr.HubConnectionState
-
+//Interface for listening to player events.
 interface PlayerListener {
     fun onStopped()
 }

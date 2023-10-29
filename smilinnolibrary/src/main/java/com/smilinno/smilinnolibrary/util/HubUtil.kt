@@ -1,21 +1,31 @@
 package com.smilinno.smilinnolibrary.util
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
 import com.microsoft.signalr.HubConnectionState
 import com.microsoft.signalr.TransportEnum
-import com.smilinno.smilinnolibrary.apistate.ApiState
-import com.smilinno.smilinnolibrary.callback.PlayerListener
 import com.smilinno.smilinnolibrary.callback.SmilinnoListener
 import com.smilinno.smilinnolibrary.model.MessageResponse
 import com.smilinno.smilinnolibrary.model.MessageType
+import com.smilinno.smilinnolibrary.util.Constants.ACCESS_TOKEN_KEY
+import com.smilinno.smilinnolibrary.util.Constants.ACCOUNTBALANCE
+import com.smilinno.smilinnolibrary.util.Constants.ACCOUNTBILL
+import com.smilinno.smilinnolibrary.util.Constants.ERROR
+import com.smilinno.smilinnolibrary.util.Constants.HUB_ADDRESS
+import com.smilinno.smilinnolibrary.util.Constants.MESSAGE
+import com.smilinno.smilinnolibrary.util.Constants.MONEYTRANSFER
+import com.smilinno.smilinnolibrary.util.Constants.PAYINGTHEBILL
+import com.smilinno.smilinnolibrary.util.Constants.TEXTMESSAGE
+import com.smilinno.smilinnolibrary.util.Constants.TOKENERROR
+import com.smilinno.smilinnolibrary.util.Constants.UNRELATED
+import com.smilinno.smilinnolibrary.util.Constants.VOICEMESSAGE
 import io.reactivex.rxjava3.observers.DisposableCompletableObserver
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 
@@ -29,42 +39,20 @@ internal object HubUtil {
             field = value
             sendConnectionState()
         }
-    private val ACCESS_TOKEN_KEY = "access_token"
-    private val TEXTMESSAGE = "TextMessage"
-    private val VOICEMESSAGE = "UserMessage"
-    private val MESSAGE = "UserMessage"
-    private val TOKENERROR = "TokenError"
-    private val PAYINGTHEBILL = "PayingTheBill"
-    private val ACCOUNTBILL = "AccountBill"
-    private val ACCOUNTBALANCE = "AccountBalance"
-    private val MONEYTRANSFER = "MoneyTransfer"
-    private val UNRELATED = "UnRelated"
-    private val ERROR = "Error"
 
-    private val chatStateFlow: MutableStateFlow<ApiState> = MutableStateFlow(ApiState.Empty)
-    val _chatStateFlow: StateFlow<ApiState> = chatStateFlow
-
-    private val connectionStateFlow: MutableStateFlow<ApiState> = MutableStateFlow(ApiState.Empty)
-    val _connectionStateFlow: StateFlow<ApiState> = connectionStateFlow
-
-    private val chatHistoryStateFlow: MutableStateFlow<ApiState> = MutableStateFlow(ApiState.Empty)
-    val _chatHistoryStateFlow: StateFlow<ApiState> = chatHistoryStateFlow
-
-    private val deleteHistoryStateFlow: MutableStateFlow<ApiState> =
-        MutableStateFlow(ApiState.Empty)
-    val _deleteHistoryStateFlow: StateFlow<ApiState> = deleteHistoryStateFlow
-
-
-    fun initSignalRHubConnection(token: String, retryConnectionTime: Long?, playTTS : (voiceUrl : String) -> Unit ) {
+    //Initializes the SignalR hub connection.
+    fun initSignalRHubConnection(
+        token: String,
+        retryConnectionTime: Long?,
+        playTTS: (voiceUrl: String) -> Unit
+    ) {
         try {
             retryConnectionTime?.let {
                 this.retryConnectionTime = it
             }
             this.playTTS = playTTS
             hubConnection = HubConnectionBuilder
-//                http://37.32.24.190:9104/chathub_v1_5
-//                https://assistant.smilinno-dev.com/hub
-                .create("https://assistant.smilinno-dev.com/hub")
+                .create(HUB_ADDRESS)
                 .withHeader(ACCESS_TOKEN_KEY, token)
                 .shouldSkipNegotiate(true)
                 .withHandshakeResponseTimeout(15 * 1000)
@@ -91,6 +79,7 @@ internal object HubUtil {
 
     }
 
+    //Starts the hub connection.If the connection fails, it will retry after a delay.
     fun startHubConnection() {
 
         try {
@@ -98,13 +87,14 @@ internal object HubUtil {
                 override fun onComplete() {
                     sendConnectionState()
                 }
-
                 override fun onError(e: Throwable) {
                     sendConnectionState()
-                    runBlocking(Dispatchers.IO) {
-                        delay(retryConnectionTime)
-                        startHubConnection()
-                    }
+                        CoroutineScope(Dispatchers.IO).launch {
+                            delay(retryConnectionTime)
+                            startHubConnection()
+                        }
+
+
                 }
             })
         } catch (e: java.lang.Exception) {
@@ -113,6 +103,7 @@ internal object HubUtil {
 
     }
 
+    //Checks if the hub connection is connected.
     fun isConnected(): Boolean {
         return if (this::hubConnection.isInitialized) {
             hubConnection.connectionState == HubConnectionState.CONNECTED
@@ -121,14 +112,15 @@ internal object HubUtil {
         }
     }
 
+    //Sends the connection state to the Smilinno listener.
     fun sendConnectionState() {
         smilinnoListener?.onConnectionStateChange(hubConnection.connectionState)
     }
 
+    //Sends a voice chat message to the server.
     fun sendVoiceChat(voiceBase64String: String) {
-        chatStateFlow.value = ApiState.Loading
         if (!isConnected()) {
-            runBlocking(Dispatchers.IO) {
+            CoroutineScope(Dispatchers.IO).launch {
                 delay(retryConnectionTime)
                 sendVoiceChat(voiceBase64String)
             }
@@ -143,10 +135,10 @@ internal object HubUtil {
 
     }
 
+    //Sends a text message to the server
     fun sendTextChat(text: String) {
-        chatStateFlow.value = ApiState.Loading
         if (!isConnected()) {
-            runBlocking(Dispatchers.IO) {
+            CoroutineScope(Dispatchers.IO).launch {
                 delay(retryConnectionTime)
                 sendTextChat(text)
             }
@@ -163,6 +155,7 @@ internal object HubUtil {
 
     }
 
+    //Gets the text from the server.
     private fun getTextFromServer() {
         try {
             hubConnection.on(MESSAGE, { message: String ->
@@ -177,6 +170,7 @@ internal object HubUtil {
         }
     }
 
+    //Gets error from server.
     private fun getErrorFromServer() {
         try {
             hubConnection.on(ERROR, { message: String ->
@@ -189,16 +183,17 @@ internal object HubUtil {
         }
     }
 
+    //Gets unrelated messages from the server.
     private fun getUnRelatedFromServer() {
         try {
             hubConnection.on(UNRELATED, { message: String ->
                 Log.d(TAG, "hubConnection on $UNRELATED: $message")
-                    val response = convertJsonStringToObject<MessageResponse>(message)
-                    response.type = MessageType.UNRELATED
-                    smilinnoListener?.onMessageReceive(response)
-                    response.voice?.let { voice ->
-                        playTTS(voice)
-                    }
+                val response = convertJsonStringToObject<MessageResponse>(message)
+                response.type = MessageType.UNRELATED
+                smilinnoListener?.onMessageReceive(response)
+                response.voice?.let { voice ->
+                    playTTS(voice)
+                }
             }, String::class.java)
         } catch (e: java.lang.Exception) {
             smilinnoListener?.onMessageError(e)
@@ -206,6 +201,7 @@ internal object HubUtil {
         }
     }
 
+    //Gets the money transfer from the server.
     private fun getMoneyTransferFromServer() {
         try {
             hubConnection.on(MONEYTRANSFER, { message: String ->
@@ -220,6 +216,7 @@ internal object HubUtil {
         }
     }
 
+    //Gets the account balance from the server.
     private fun getAccountBalanceFromServer() {
         try {
             hubConnection.on(ACCOUNTBALANCE, { message: String ->
@@ -234,6 +231,7 @@ internal object HubUtil {
         }
     }
 
+    //Gets the account bill from the server.
     private fun getAccountBillFromServer() {
         try {
             hubConnection.on(ACCOUNTBILL, { message: String ->
@@ -248,6 +246,7 @@ internal object HubUtil {
         }
     }
 
+    //Gets the paying the bill message from the server.
     private fun getPayingTheBillFromServer() {
         try {
             hubConnection.on(PAYINGTHEBILL, { message: String ->
@@ -262,6 +261,7 @@ internal object HubUtil {
         }
     }
 
+    //Gets the token error from the server.
     private fun getTokenErrorFromServer() {
         try {
             hubConnection.on(TOKENERROR, { message: String ->
@@ -274,6 +274,7 @@ internal object HubUtil {
         }
     }
 
+    //Converts a JSON string to an object of type [T].
     private inline fun <reified T> convertJsonStringToObject(jsonString: String): T =
         Gson().fromJson(jsonString, T::class.java)
 
