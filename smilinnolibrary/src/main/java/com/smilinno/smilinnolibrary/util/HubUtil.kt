@@ -2,39 +2,43 @@ package com.smilinno.smilinnolibrary.util
 
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.internal.LinkedTreeMap
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
 import com.microsoft.signalr.HubConnectionState
 import com.microsoft.signalr.TransportEnum
-import com.smilinno.smilinnolibrary.callback.SmilinnoListener
+import com.smilinno.smilinnolibrary.callback.AssistantListener
+import com.smilinno.smilinnolibrary.callback.VoiceToTextListener
+import com.smilinno.smilinnolibrary.callback.TextToVoiceListener
 import com.smilinno.smilinnolibrary.model.MessageResponse
 import com.smilinno.smilinnolibrary.model.MessageType
-import com.smilinno.smilinnolibrary.util.Constants.ACCESS_TOKEN_KEY
-import com.smilinno.smilinnolibrary.util.Constants.ACCOUNTBALANCE
-import com.smilinno.smilinnolibrary.util.Constants.ACCOUNTBILL
+import com.smilinno.smilinnolibrary.model.MessageVoiceToText
+import com.smilinno.smilinnolibrary.model.MessageTextToVoice
+import com.smilinno.smilinnolibrary.util.Constants.ASSISTANT
+import com.smilinno.smilinnolibrary.util.Constants.AUTHORIZATION
 import com.smilinno.smilinnolibrary.util.Constants.ERROR
-import com.smilinno.smilinnolibrary.util.Constants.HUB_ADDRESS
-import com.smilinno.smilinnolibrary.util.Constants.MESSAGE
-import com.smilinno.smilinnolibrary.util.Constants.MONEYTRANSFER
-import com.smilinno.smilinnolibrary.util.Constants.PAYINGTHEBILL
-import com.smilinno.smilinnolibrary.util.Constants.TEXTMESSAGE
-import com.smilinno.smilinnolibrary.util.Constants.TOKENERROR
-import com.smilinno.smilinnolibrary.util.Constants.UNRELATED
-import com.smilinno.smilinnolibrary.util.Constants.VOICEMESSAGE
+import com.smilinno.smilinnolibrary.util.Constants.HUB_ADDRESS_NEW
+import com.smilinno.smilinnolibrary.util.Constants.SPEECHTOTEXT
+import com.smilinno.smilinnolibrary.util.Constants.TEXTASSISTANT
+import com.smilinno.smilinnolibrary.util.Constants.TEXTTOSPEECH
+import com.smilinno.smilinnolibrary.util.Constants.VOICEASSISTANT
 import io.reactivex.rxjava3.observers.DisposableCompletableObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import java.lang.Exception
 
 
 internal object HubUtil {
     private lateinit var playTTS: (voiceUrl: String) -> Unit
+    private var voiceToTextListener: VoiceToTextListener? = null
+    private var textToVoiceListener: TextToVoiceListener? = null
     private val TAG: String = HubUtil::class.java.simpleName
     private lateinit var hubConnection: HubConnection
     private var retryConnectionTime = 1000L
-    var smilinnoListener: SmilinnoListener? = null
+    var assistantListener: AssistantListener? = null
         set(value) {
             field = value
             sendConnectionState()
@@ -52,8 +56,8 @@ internal object HubUtil {
             }
             this.playTTS = playTTS
             hubConnection = HubConnectionBuilder
-                .create(HUB_ADDRESS)
-                .withHeader(ACCESS_TOKEN_KEY, token)
+                .create(HUB_ADDRESS_NEW)
+                .withHeader(AUTHORIZATION, token)
                 .shouldSkipNegotiate(true)
                 .withHandshakeResponseTimeout(15 * 1000)
                 .withTransport(TransportEnum.WEBSOCKETS)
@@ -61,20 +65,16 @@ internal object HubUtil {
             hubConnection.serverTimeout = 30 * 1000
             hubConnection.keepAliveInterval = 10 * 1000
             hubConnection.onClosed {
-                Log.e(TAG, "hubConnection is closed!", it)
+                Log.e(TAG, "HubUtil hubConnection is closed!", it)
                 sendConnectionState()
                 startHubConnection()
             }
-            getTextFromServer()
-            getErrorFromServer()
-            getUnRelatedFromServer()
-            getMoneyTransferFromServer()
-            getAccountBalanceFromServer()
-            getAccountBillFromServer()
-            getPayingTheBillFromServer()
-            getTokenErrorFromServer()
+            getTextFromAssistant()
+            getVoiceFromText()
+            getTextFromVoice()
+            getErrorFromAssistant()
         } catch (e: java.lang.Exception) {
-            Log.e(TAG, "initSignalRHubConnection exception:", e)
+            Log.e(TAG, "HubUtil initSignalRHubConnection exception:", e)
         }
 
     }
@@ -87,18 +87,19 @@ internal object HubUtil {
                 override fun onComplete() {
                     sendConnectionState()
                 }
+
                 override fun onError(e: Throwable) {
                     sendConnectionState()
-                        CoroutineScope(Dispatchers.IO).launch {
-                            delay(retryConnectionTime)
-                            startHubConnection()
-                        }
+                    CoroutineScope(Dispatchers.IO).launch {
+                        delay(retryConnectionTime)
+                        startHubConnection()
+                    }
 
 
                 }
             })
         } catch (e: java.lang.Exception) {
-            Log.e(TAG, "hubConnection start: ", e)
+            Log.e(TAG, "HubUtil hubConnection start: ", e)
         }
 
     }
@@ -114,168 +115,148 @@ internal object HubUtil {
 
     //Sends the connection state to the Smilinno listener.
     fun sendConnectionState() {
-        smilinnoListener?.onConnectionStateChange(hubConnection.connectionState)
+        assistantListener?.onConnectionStateChange(hubConnection.connectionState)
     }
 
     //Sends a voice chat message to the server.
-    fun sendVoiceChat(voiceBase64String: String) {
+    fun sendVoiceToAssistant(voiceBase64String: String) {
         if (!isConnected()) {
             CoroutineScope(Dispatchers.IO).launch {
                 delay(retryConnectionTime)
-                sendVoiceChat(voiceBase64String)
+                sendVoiceToAssistant(voiceBase64String)
             }
         } else {
             try {
-                Log.d(TAG, "hubConnection sent!")
-                hubConnection.send(VOICEMESSAGE, voiceBase64String)
+                Log.d(TAG, "HubUtil send $VOICEASSISTANT : $voiceBase64String")
+                hubConnection.send(VOICEASSISTANT, voiceBase64String)
             } catch (e: java.lang.Exception) {
-                Log.e(TAG, "hubConnection send error: ", e)
+                assistantListener?.onMessageError(e)
+                Log.e(TAG, "HubUtil send: ", e)
             }
         }
 
     }
 
     //Sends a text message to the server
-    fun sendTextChat(text: String) {
+    fun sendTextToAssistant(text: String) {
         if (!isConnected()) {
             CoroutineScope(Dispatchers.IO).launch {
                 delay(retryConnectionTime)
-                sendTextChat(text)
+                sendTextToAssistant(text)
             }
-            smilinnoListener?.onMessageError(Exception("Server ${hubConnection.connectionState}"))
-
         } else {
             try {
-                Log.d(TAG, "hubConnection send $TEXTMESSAGE : $text")
-                hubConnection.send(TEXTMESSAGE, text)
+                Log.d(TAG, "HubUtil send $TEXTASSISTANT : $text")
+                hubConnection.send(TEXTASSISTANT, text)
             } catch (e: java.lang.Exception) {
-                Log.e(TAG, "hubConnection send error: ", e)
+                assistantListener?.onMessageError(e)
+                Log.e(TAG, "HubUtil send: ", e)
             }
         }
 
     }
 
-    //Gets the text from the server.
-    private fun getTextFromServer() {
+    //Sends the given text to the server to get a voice response.
+    fun sendTextToGetVoice(text: String, textToVoiceListener: TextToVoiceListener) {
+        this.textToVoiceListener = textToVoiceListener
+        if (!isConnected()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(retryConnectionTime)
+                sendTextToGetVoice(text, textToVoiceListener)
+            }
+
+        } else {
+            try {
+                Log.d(TAG, "HubUtil send $TEXTTOSPEECH : $text")
+                hubConnection.send(TEXTTOSPEECH, text)
+            } catch (e: java.lang.Exception) {
+                textToVoiceListener.onError(e)
+                Log.e(TAG, "HubUtil send: ", e)
+            }
+        }
+
+    }
+
+    //Sends a voice base64 string to the server and gets the text back
+    fun sendVoiceToGetText(voiceBase64String: String, voiceToTextListener: VoiceToTextListener) {
+        this.voiceToTextListener = voiceToTextListener
+        if (!isConnected()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(retryConnectionTime)
+                sendVoiceToGetText(voiceBase64String, voiceToTextListener)
+            }
+        } else {
+            try {
+                Log.d(TAG, "HubUtil send $SPEECHTOTEXT : $voiceBase64String")
+                hubConnection.send(SPEECHTOTEXT, voiceBase64String)
+            } catch (e: java.lang.Exception) {
+                voiceToTextListener.onError(e)
+                Log.e(TAG, "HubUtil send: ", e)
+            }
+        }
+
+    }
+
+    //Gets the voice from the hub connection
+    private fun getVoiceFromText() {
         try {
-            hubConnection.on(MESSAGE, { message: String ->
-                Log.d(TAG, "hubConnection on $MESSAGE: $message")
-                val response = convertJsonStringToObject<MessageResponse>(message)
-                response.type = MessageType.MESSAGE
-                smilinnoListener?.onMessageReceive(response)
-            }, String::class.java)
+            hubConnection.on(SPEECHTOTEXT, { message: LinkedTreeMap<String, Any> ->
+                Log.d(TAG, "HubUtil on $SPEECHTOTEXT: $message")
+                val response: MessageVoiceToText = convertToObject(message)
+                voiceToTextListener?.onTextReceive(response)
+            }, Any::class.java)
         } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
+            voiceToTextListener?.onError(e)
+            Log.e(TAG, "HubUtil on: ", e)
+        }
+    }
+
+    // Gets the text from the hub connection.
+    private fun getTextFromVoice() {
+        try {
+            hubConnection.on(TEXTTOSPEECH, { message: LinkedTreeMap<String, Any> ->
+                Log.d(TAG, "HubUtil on $TEXTTOSPEECH: $message")
+                val response: MessageTextToVoice = convertToObject(message)
+                textToVoiceListener?.onVoiceReceive(response)
+            }, Any::class.java)
+        } catch (e: java.lang.Exception) {
+            textToVoiceListener?.onError(e)
+            Log.e(TAG, "HubUtil on: ", e)
+        }
+    }
+
+    //Gets the text from the server.
+    private fun getTextFromAssistant() {
+        try {
+            hubConnection.on(ASSISTANT, { message: LinkedTreeMap<String, Any> ->
+                Log.d(TAG, "HubUtil on $ASSISTANT: $message")
+                val response: MessageResponse = convertToObject(message)
+                response.type = MessageType.ASSISTANT
+                assistantListener?.onMessageReceive(response)
+            }, Any::class.java)
+        } catch (e: java.lang.Exception) {
+            assistantListener?.onMessageError(e)
+            Log.e(TAG, "HubUtil on: ", e)
         }
     }
 
     //Gets error from server.
-    private fun getErrorFromServer() {
+    private fun getErrorFromAssistant() {
         try {
-            hubConnection.on(ERROR, { message: String ->
-                Log.d(TAG, "hubConnection on $ERROR: $message")
-                smilinnoListener?.onMessageError(Exception(message))
-            }, String::class.java)
+            hubConnection.on(ERROR, { message: LinkedTreeMap<String, Any> ->
+                Log.d(TAG, "HubUtil on $ERROR: $message")
+                val response: MessageResponse = convertToObject(message)
+                response.type = MessageType.ERROR
+                assistantListener?.onMessageError(Exception(response.text))
+            }, Any::class.java)
         } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
+            assistantListener?.onMessageError(e)
+            Log.e(TAG, "HubUtil on: ", e)
         }
     }
 
-    //Gets unrelated messages from the server.
-    private fun getUnRelatedFromServer() {
-        try {
-            hubConnection.on(UNRELATED, { message: String ->
-                Log.d(TAG, "hubConnection on $UNRELATED: $message")
-                val response = convertJsonStringToObject<MessageResponse>(message)
-                response.type = MessageType.UNRELATED
-                smilinnoListener?.onMessageReceive(response)
-                response.voice?.let { voice ->
-                    playTTS(voice)
-                }
-            }, String::class.java)
-        } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
-        }
+    private inline fun <reified T> convertToObject(message: LinkedTreeMap<String, Any>): T {
+        val jsonObject: JsonObject = Gson().toJsonTree(message).getAsJsonObject()
+        return Gson().fromJson(jsonObject, T::class.java)
     }
-
-    //Gets the money transfer from the server.
-    private fun getMoneyTransferFromServer() {
-        try {
-            hubConnection.on(MONEYTRANSFER, { message: String ->
-                Log.d(TAG, "hubConnection on $MONEYTRANSFER: $message")
-                val response = convertJsonStringToObject<MessageResponse>(message)
-                response.type = MessageType.MONEYTRANSFER
-                smilinnoListener?.onMessageReceive(response)
-            }, String::class.java)
-        } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
-        }
-    }
-
-    //Gets the account balance from the server.
-    private fun getAccountBalanceFromServer() {
-        try {
-            hubConnection.on(ACCOUNTBALANCE, { message: String ->
-                Log.d(TAG, "hubConnection on $ACCOUNTBALANCE: $message")
-                val response = convertJsonStringToObject<MessageResponse>(message)
-                response.type = MessageType.ACCOUNTBALANCE
-                smilinnoListener?.onMessageReceive(response)
-            }, String::class.java)
-        } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
-        }
-    }
-
-    //Gets the account bill from the server.
-    private fun getAccountBillFromServer() {
-        try {
-            hubConnection.on(ACCOUNTBILL, { message: String ->
-                Log.d(TAG, "hubConnection on $ACCOUNTBILL: $message")
-                val response = convertJsonStringToObject<MessageResponse>(message)
-                response.type = MessageType.ACCOUNTBILL
-                smilinnoListener?.onMessageReceive(response)
-            }, String::class.java)
-        } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
-        }
-    }
-
-    //Gets the paying the bill message from the server.
-    private fun getPayingTheBillFromServer() {
-        try {
-            hubConnection.on(PAYINGTHEBILL, { message: String ->
-                Log.d(TAG, "hubConnection on $PAYINGTHEBILL: $message")
-                val response = convertJsonStringToObject<MessageResponse>(message)
-                response.type = MessageType.PAYINGTHEBILL
-                smilinnoListener?.onMessageReceive(response)
-            }, String::class.java)
-        } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
-        }
-    }
-
-    //Gets the token error from the server.
-    private fun getTokenErrorFromServer() {
-        try {
-            hubConnection.on(TOKENERROR, { message: String ->
-                Log.d(TAG, "hubConnection on $TOKENERROR: $message")
-                smilinnoListener?.onMessageError(Exception(message))
-            }, String::class.java)
-        } catch (e: java.lang.Exception) {
-            smilinnoListener?.onMessageError(e)
-            Log.e(TAG, "hubConnection on: ", e)
-        }
-    }
-
-    //Converts a JSON string to an object of type [T].
-    private inline fun <reified T> convertJsonStringToObject(jsonString: String): T =
-        Gson().fromJson(jsonString, T::class.java)
-
 }

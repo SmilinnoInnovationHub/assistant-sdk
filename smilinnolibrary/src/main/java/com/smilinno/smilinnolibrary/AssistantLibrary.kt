@@ -2,7 +2,9 @@ package com.smilinno.smilinnolibrary
 
 import android.content.Context
 import com.smilinno.smilinnolibrary.callback.PlayerListener
-import com.smilinno.smilinnolibrary.callback.SmilinnoListener
+import com.smilinno.smilinnolibrary.callback.AssistantListener
+import com.smilinno.smilinnolibrary.callback.VoiceToTextListener
+import com.smilinno.smilinnolibrary.callback.TextToVoiceListener
 import com.smilinno.smilinnolibrary.util.HubUtil
 import com.smilinno.smilinnolibrary.util.PlayerUtil
 import kotlinx.coroutines.Dispatchers
@@ -11,18 +13,28 @@ import kotlinx.coroutines.runBlocking
 class AssistantLibrary private constructor(private val builder: Builder) {
 
     //Sends a voice message to the hub.
-    fun sendVoiceMessage(base64Message: String) {
-        HubUtil.sendVoiceChat(base64Message)
+    fun sendVoiceToAssistant(base64Message: String) {
+        HubUtil.sendVoiceToAssistant(base64Message)
     }
 
     // Send a text chat message to the Hub.
-    fun setTextMessage(text: String) {
-        HubUtil.sendTextChat(text)
+    fun sendTextToAssistant(text: String) {
+        HubUtil.sendTextToAssistant(text)
+    }
+
+    // Send the text to the HubUtil class to be processed.
+    fun sendTextToGetVoice(text: String, textToVoiceListener: TextToVoiceListener) {
+        HubUtil.sendTextToGetVoice(text,textToVoiceListener)
+    }
+
+    // Send the base64-encoded audio message to the HubUtil class.
+    fun sendVoiceToGetText(base64Message: String, voiceToTextListener: VoiceToTextListener) {
+        HubUtil.sendVoiceToGetText(base64Message, voiceToTextListener)
     }
 
     // Set the Smilinno listener to the HubUtil.
-    fun setSmilinnoCallBack(smilinnoListener : SmilinnoListener) {
-        HubUtil.smilinnoListener = smilinnoListener
+    fun setAssistantCallBack(assistantListener : AssistantListener) {
+        HubUtil.assistantListener = assistantListener
     }
 
     // A variables to store.

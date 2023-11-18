@@ -21,12 +21,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.snackbar.Snackbar
 import com.microsoft.signalr.HubConnectionState
 import com.smilinno.projectlibrary.databinding.ActivityMainBinding
 import com.smilinno.smilinnolibrary.AssistantLibrary
-import com.smilinno.smilinnolibrary.callback.SmilinnoListener
+import com.smilinno.smilinnolibrary.callback.AssistantListener
+import com.smilinno.smilinnolibrary.callback.PlayerListener
+import com.smilinno.smilinnolibrary.callback.VoiceToTextListener
+import com.smilinno.smilinnolibrary.callback.TextToVoiceListener
 import com.smilinno.smilinnolibrary.model.MessageResponse
 import com.smilinno.smilinnolibrary.model.MessageType
+import com.smilinno.smilinnolibrary.model.MessageVoiceToText
+import com.smilinno.smilinnolibrary.model.MessageTextToVoice
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -59,10 +65,41 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        bindText()
-        bindAssistant()
+        bindTextAssistant()
+        bindVoiceAssistant()
+        bindTextToVoice()
+        bindVoiceToText()
         showCallBack()
         bindGoogle()
+    }
+
+    //Binds the voice to text button to the appropriate action
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun bindVoiceToText() = with(binding.SpeechToText) {
+        setOnClickListener {
+            binding.editText.setText("")
+            if (checkRecordAudioPermissionRequest()) {
+                recorderVoiceToText()
+            }
+        }
+    }
+
+    //Binds the text to voice button to the assistant library
+    private fun bindTextToVoice() {
+        binding.TextToSpeech.setOnClickListener { 
+            assistantLibrary.sendTextToGetVoice(binding.editText.text.toString(),object : TextToVoiceListener{
+                override fun onVoiceReceive(message: MessageTextToVoice) {
+                    voice = message.voice
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        PlayerApp.playVoice(this@MainActivity,voice,object : PlayerListener{ override fun onStopped() {} })
+                    }
+                }
+                override fun onError(e: Exception) {
+
+                }
+
+            })
+        }
     }
 
     //* Binds the button to the Google ASR function.
@@ -104,41 +141,20 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
 
     //Shows the call back.
     private fun showCallBack() {
-        assistantLibrary.setSmilinnoCallBack(object : SmilinnoListener {
+        assistantLibrary.setAssistantCallBack(object : AssistantListener {
             @SuppressLint("SetTextI18n")
             override fun onMessageReceive(message: MessageResponse) {
                 Log.e(TAG, "onMessageReceive: $message")
                 lifecycleScope.launch(Dispatchers.Main) {
                     voice = message.voice
                     when (message.type) {
-                        MessageType.MESSAGE -> {
-                            binding.textView.text =
-                                "${MessageType.MESSAGE.name} : ${message.text}"
-                        }
 
-                        MessageType.UNRELATED -> {
+                        MessageType.ASSISTANT -> {
                             binding.textView2.text =
-                                "${MessageType.UNRELATED.name} : ${message.text}"
+                                "${MessageType.ASSISTANT.name} : ${message.text}"
                         }
+                        MessageType.ERROR -> {
 
-                        MessageType.PAYINGTHEBILL -> {
-                            binding.textView2.text =
-                                "${MessageType.PAYINGTHEBILL.name} : ${message.text}"
-                        }
-
-                        MessageType.ACCOUNTBILL -> {
-                            binding.textView2.text =
-                                "${MessageType.ACCOUNTBILL.name} : ${message.text}"
-                        }
-
-                        MessageType.MONEYTRANSFER -> {
-                            binding.textView2.text =
-                                "${MessageType.MONEYTRANSFER.name} : ${message.text}"
-                        }
-
-                        MessageType.ACCOUNTBALANCE -> {
-                            binding.textView2.text =
-                                "${MessageType.ACCOUNTBALANCE.name} : ${message.text}"
                         }
 
                         else -> {}
@@ -161,9 +177,9 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
     }
 
     //Binds the send button to the assistant library.
-    private fun bindText() {
+    private fun bindTextAssistant() {
         binding.send.setOnClickListener {
-            assistantLibrary.setTextMessage(binding.editText.text.toString())
+            assistantLibrary.sendTextToAssistant(binding.editText.text.toString())
         }
     }
 
@@ -171,7 +187,7 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
     // Binds the assistant to the view.
     @RequiresApi(Build.VERSION_CODES.M)
     @SuppressLint("ClickableViewAccessibility")
-    private fun bindAssistant() = with(binding.sendVoice) {
+    private fun bindVoiceAssistant() = with(binding.sendVoice) {
         setOnClickListener {
             binding.editText.setText("")
             if (checkRecordAudioPermissionRequest()) {
@@ -191,6 +207,19 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
             binding.micAnimationContainer.visibility = View.VISIBLE
         } else {
             stopMic()
+        }
+    }
+
+    private fun recorderVoiceToText() {
+        if (timerHasFinished) {
+            releaseRecorder()
+            cTimer?.start()
+            timerHasFinished = false
+            initMediaRecorder()
+            startRecordTime = System.currentTimeMillis()
+            binding.micAnimationContainer.visibility = View.VISIBLE
+        } else {
+            stopMicVoiceToText()
         }
     }
 
@@ -250,7 +279,43 @@ class MainActivity : AppCompatActivity() , RecognitionListener {
                     audioBase64 = getAudioBase64()
                 }
                 if (audioBase64 != null) {
-                    assistantLibrary.sendVoiceMessage(audioBase64)
+                    assistantLibrary.sendVoiceToAssistant(audioBase64)
+                }
+            }
+        }
+    }
+
+    private fun stopMicVoiceToText() {
+        if (isRecordAudioPermissionGranted()) {
+            binding.micAnimationContainer.visibility = View.INVISIBLE
+            if (System.currentTimeMillis() < startRecordTime + recordDelayTime) {
+                lifecycleScope.launch {
+                    cTimer?.cancel()
+                    timerHasFinished = true
+                    delay(300)
+                    releaseRecorder()
+                }
+            } else {
+                releaseRecorder()
+                cTimer?.cancel()
+                timerHasFinished = true
+                var audioBase64: String? = null
+                if (audioFilePath != null) {
+                    audioBase64 = getAudioBase64()
+                }
+                if (audioBase64 != null) {
+                    assistantLibrary.sendVoiceToGetText(audioBase64,object : VoiceToTextListener{
+                        override fun onTextReceive(message: MessageVoiceToText) {
+                            lifecycleScope.launch(Dispatchers.Main) {
+                                Snackbar.make(binding.root,message.text.toString(), Snackbar.LENGTH_SHORT).show()
+                            }
+                        }
+
+                        override fun onError(e: Exception) {
+
+                        }
+
+                    })
                 }
             }
         }

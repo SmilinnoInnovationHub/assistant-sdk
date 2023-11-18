@@ -11,5 +11,7 @@ data class MessageResponse(
     val text: String?,
     @SerializedName("voice")
     val voice: String?,
+    @SerializedName("custom")
+    val custom: Any?,
     var type : MessageType?,
 )
