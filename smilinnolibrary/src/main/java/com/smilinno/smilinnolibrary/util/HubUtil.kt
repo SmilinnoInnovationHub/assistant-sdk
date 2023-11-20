@@ -44,7 +44,13 @@ internal object HubUtil {
             sendConnectionState()
         }
 
-    //Initializes the SignalR hub connection.
+    /**
+     * Initializes the SignalR hub connection.
+     *
+     * @param token The access token to use for authentication.
+     * @param retryConnectionTime The time in milliseconds to wait before retrying the connection if it fails.
+     * @param playTTS A function to play TTS audio.
+     */
     fun initSignalRHubConnection(
         token: String,
         retryConnectionTime: Long?,
@@ -79,7 +85,9 @@ internal object HubUtil {
 
     }
 
-    //Starts the hub connection.If the connection fails, it will retry after a delay.
+    /**
+     * Starts the hub connection.
+     */
     fun startHubConnection() {
 
         try {
@@ -104,7 +112,11 @@ internal object HubUtil {
 
     }
 
-    //Checks if the hub connection is connected.
+    /**
+     * Checks if the hub connection is connected.
+     *
+     * @return True if the hub connection is connected, false otherwise.
+     */
     fun isConnected(): Boolean {
         return if (this::hubConnection.isInitialized) {
             hubConnection.connectionState == HubConnectionState.CONNECTED
@@ -113,12 +125,20 @@ internal object HubUtil {
         }
     }
 
-    //Sends the connection state to the Smilinno listener.
+    /**
+     * Sends the current connection state to the assistant listener.
+     */
     fun sendConnectionState() {
         assistantListener?.onConnectionStateChange(hubConnection.connectionState)
     }
 
-    //Sends a voice chat message to the server.
+    /**
+     * Sends a voice message to the assistant.
+     *
+     * If the connection is not connected, the message will be retried after a delay.
+     *
+     * @param voiceBase64String The voice message in base64 format.
+     */
     fun sendVoiceToAssistant(voiceBase64String: String) {
         if (!isConnected()) {
             CoroutineScope(Dispatchers.IO).launch {
@@ -137,7 +157,13 @@ internal object HubUtil {
 
     }
 
-    //Sends a text message to the server
+    /**
+     * Sends a text message to the assistant.
+     *
+     * If the connection is not established, the message will be sent again after a delay.
+     *
+     * @param text The text message to send.
+     */
     fun sendTextToAssistant(text: String) {
         if (!isConnected()) {
             CoroutineScope(Dispatchers.IO).launch {
@@ -156,7 +182,12 @@ internal object HubUtil {
 
     }
 
-    //Sends the given text to the server to get a voice response.
+    /**
+     * Sends the given text to the hub and listens for the response.
+     *
+     * @param text The text to send.
+     * @param textToVoiceListener The listener to receive the response.
+     */
     fun sendTextToGetVoice(text: String, textToVoiceListener: TextToVoiceListener) {
         this.textToVoiceListener = textToVoiceListener
         if (!isConnected()) {
@@ -177,7 +208,12 @@ internal object HubUtil {
 
     }
 
-    //Sends a voice base64 string to the server and gets the text back
+    /**
+     * Sends a voice base64 string to the hub and gets the text back.
+     *
+     * @param voiceBase64String The voice base64 string.
+     * @param voiceToTextListener The listener to receive the text.
+     */
     fun sendVoiceToGetText(voiceBase64String: String, voiceToTextListener: VoiceToTextListener) {
         this.voiceToTextListener = voiceToTextListener
         if (!isConnected()) {
@@ -197,7 +233,9 @@ internal object HubUtil {
 
     }
 
-    //Gets the voice from the hub connection
+    /**
+     * Gets the voice from the text.
+     */
     private fun getVoiceFromText() {
         try {
             hubConnection.on(SPEECHTOTEXT, { message: LinkedTreeMap<String, Any> ->
@@ -211,7 +249,9 @@ internal object HubUtil {
         }
     }
 
-    // Gets the text from the hub connection.
+    /**
+     * Gets text from voice.
+     */
     private fun getTextFromVoice() {
         try {
             hubConnection.on(TEXTTOSPEECH, { message: LinkedTreeMap<String, Any> ->
@@ -225,7 +265,9 @@ internal object HubUtil {
         }
     }
 
-    //Gets the text from the server.
+    /**
+     * Gets the text from the assistant.
+     */
     private fun getTextFromAssistant() {
         try {
             hubConnection.on(ASSISTANT, { message: LinkedTreeMap<String, Any> ->
@@ -233,6 +275,9 @@ internal object HubUtil {
                 val response: MessageResponse = convertToObject(message)
                 response.type = MessageType.ASSISTANT
                 assistantListener?.onMessageReceive(response)
+                response.voice?.let { voice ->
+                    playTTS(voice)
+                }
             }, Any::class.java)
         } catch (e: java.lang.Exception) {
             assistantListener?.onMessageError(e)
@@ -240,7 +285,9 @@ internal object HubUtil {
         }
     }
 
-    //Gets error from server.
+    /**
+     * Gets the error from the assistant.
+     */
     private fun getErrorFromAssistant() {
         try {
             hubConnection.on(ERROR, { message: LinkedTreeMap<String, Any> ->
@@ -255,6 +302,12 @@ internal object HubUtil {
         }
     }
 
+    /**
+     * Converts a LinkedTreeMap to an object of type T.
+     *
+     * @param message The LinkedTreeMap to convert.
+     * @return The converted object.
+     */
     private inline fun <reified T> convertToObject(message: LinkedTreeMap<String, Any>): T {
         val jsonObject: JsonObject = Gson().toJsonTree(message).getAsJsonObject()
         return Gson().fromJson(jsonObject, T::class.java)

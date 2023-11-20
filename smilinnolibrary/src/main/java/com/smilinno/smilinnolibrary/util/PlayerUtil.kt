@@ -20,7 +20,13 @@ internal object PlayerUtil {
     var isPlaying = false
     private var playerListener: PlayerListener? = null
 
-    //Plays a voice message.
+    /**
+     * Plays a voice message.
+     *
+     * @param context The context of the activity.
+     * @param url The URL of the voice message.
+     * @param playerListener The listener for the player.
+     */
     fun playVoice(context: Context, url: String?, playerListener: PlayerListener) {
         if (url != null) {
             PlayerUtil.playerListener = playerListener
@@ -31,7 +37,12 @@ internal object PlayerUtil {
         }
     }
 
-    //Initializes the ExoPlayer with the given URI
+    /**
+     * Initializes the ExoPlayer.
+     *
+     * @param context The context.
+     * @param uri The URI of the video to play.
+     */
     private fun initialExoPlayer(context: Context, uri: Uri) {
         if (exoPlayer == null) {
             exoPlayer = ExoPlayer.Builder(context).build()
@@ -59,7 +70,13 @@ internal object PlayerUtil {
         exoPlayer?.play()
     }
 
-    //Gets the audio media source.
+    /**
+     * Gets the audio media source for the given URI.
+     *
+     * @param context The context.
+     * @param uri The URI of the audio file.
+     * @return The audio media source.
+     */
     private fun getAudioMediaSource(context: Context, uri: Uri): MediaSource {
         val dataFactory: DataSource.Factory =
             DefaultDataSource.Factory(context)
@@ -68,7 +85,9 @@ internal object PlayerUtil {
             .createMediaSource(MediaItem.fromUri(uri))
     }
 
-    // Releases the player and resets the state.
+    /**
+     * Releases the player.
+     */
     fun releasePlayer() {
         isPlaying = false
         if (exoPlayer != null) {
@@ -77,7 +96,13 @@ internal object PlayerUtil {
         }
     }
 
-    //Plays a TTS message. If a message is already playing, it will be released and the new message will be played
+    /**
+     * Plays a text-to-speech message using the specified voice.
+     *
+     * @param context The context of the application.
+     * @param voice The name of the voice to use.
+     * @param playerListener A listener that will be notified when the message is finished playing.
+     */
     fun playTTS(context: Context, voice: String, playerListener: PlayerListener) {
             if (isPlaying) {
                 releasePlayer()

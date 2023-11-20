@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
+    android:fitsSystemWindows="true"
+    android:layoutDirection="rtl"
+    android:background="@drawable/bg_"
+    android:windowSoftInputMode="adjustResize">
+
+    <TextView
+        android:id="@+id/state"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/listChat"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/editTxtLay"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/state"
+        app:reverseLayout="true"
+        app:stackFromEnd="true"
+        tools:listitem="@layout/chat_item_row" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/editTxtLay"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="26dp"
+        app:boxBackgroundColor="@color/box_background_color"
+        app:boxCornerRadiusBottomEnd="15dp"
+        app:boxCornerRadiusBottomStart="15dp"
+        app:boxCornerRadiusTopEnd="15dp"
+        app:boxCornerRadiusTopStart="15dp"
+        app:boxStrokeColor="@color/black"
+        app:boxStrokeWidth="1dp"
+        app:hintEnabled="false"
+        app:hintTextColor="@color/gray_chat_owner"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/chatEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="50dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:fontFamily="@font/yekanbakh_fanum_medium"
+            android:hint="@string/hint_edittext" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mic_animation_container"
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/editTxtLay"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/mic_animation"
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:lottie_rawRes="@raw/wave4" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/is_typing_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/editTxtLay"
+        app:layout_constraintLeft_toLeftOf="parent">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/is_typing_text"
+            style="@style/TextMed10Gray"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/is_typing_text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/is_typing_animation"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toLeftOf="@id/is_typing_text"
+            app:layout_constraintTop_toTopOf="parent"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:lottie_rawRes="@raw/wave6"
+            tools:layout_editor_absoluteX="34dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ImageView
+        android:id="@+id/sendChat"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:padding="12dp"
+        android:visibility="gone"
+        android:src="@drawable/send"
+        app:tint="@color/purple_500"
+        android:layout_marginLeft="6dp"
+        app:layout_constraintTop_toTopOf="@id/editTxtLay"
+        app:layout_constraintBottom_toBottomOf="@id/editTxtLay"
+        app:layout_constraintLeft_toLeftOf="@id/editTxtLay"/>
+
+    <ImageView
+        android:id="@+id/sendVoice"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:padding="12dp"
+        android:src="@drawable/keyboard_voice"
+        app:tint="@color/purple_500"
+        android:visibility="visible"
+        android:layout_marginLeft="6dp"
+        app:layout_constraintTop_toTopOf="@id/editTxtLay"
+        app:layout_constraintBottom_toBottomOf="@id/editTxtLay"
+        app:layout_constraintLeft_toLeftOf="@id/editTxtLay"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

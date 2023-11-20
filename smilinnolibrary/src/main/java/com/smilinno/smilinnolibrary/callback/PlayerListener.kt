@@ -1,6 +1,8 @@
 package com.smilinno.smilinnolibrary.callback
 
-//Interface for listening to player events.
+/**
+ * A listener that is called when a player is stopped.
+ */
 interface PlayerListener {
     fun onStopped()
 }

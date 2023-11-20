@@ -1,6 +1,8 @@
 package com.smilinno.smilinnolibrary.model
 
-//An enum representing the different types of messages that can be sent.
+/**
+ * An enum representing the type of message.
+ */
 enum class MessageType {
     ASSISTANT, ERROR
 }

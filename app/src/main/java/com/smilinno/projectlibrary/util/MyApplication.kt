@@ -1,4 +1,4 @@
-package com.smilinno.projectlibrary
+package com.smilinno.projectlibrary.util
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp

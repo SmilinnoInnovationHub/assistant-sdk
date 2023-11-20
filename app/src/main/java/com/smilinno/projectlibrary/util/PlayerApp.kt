@@ -1,4 +1,4 @@
-package com.smilinno.projectlibrary
+package com.smilinno.projectlibrary.util
 
 import android.content.Context
 import android.media.session.PlaybackState
@@ -20,18 +20,16 @@ internal object PlayerApp {
     var isPlaying = false
     private var playerListener: PlayerListener? = null
 
-    //Plays a voice message.
     fun playVoice(context: Context, url: String?, playerListener: PlayerListener) {
         if (url != null) {
             PlayerApp.playerListener = playerListener
             isPlaying = true
             initialExoPlayer(context, Uri.parse(url))
         } else {
-            // TODO
+
         }
     }
 
-    //Initializes the ExoPlayer with the given URI
     private fun initialExoPlayer(context: Context, uri: Uri) {
         if (exoPlayer == null) {
             exoPlayer = ExoPlayer.Builder(context).build()
@@ -59,7 +57,6 @@ internal object PlayerApp {
         exoPlayer?.play()
     }
 
-    //Gets the audio media source.
     private fun getAudioMediaSource(context: Context, uri: Uri): MediaSource {
         val dataFactory: DataSource.Factory =
             DefaultDataSource.Factory(context)
@@ -68,7 +65,6 @@ internal object PlayerApp {
             .createMediaSource(MediaItem.fromUri(uri))
     }
 
-    // Releases the player and resets the state.
     fun releasePlayer() {
         isPlaying = false
         if (exoPlayer != null) {
@@ -77,7 +73,6 @@ internal object PlayerApp {
         }
     }
 
-    //Plays a TTS message. If a message is already playing, it will be released and the new message will be played
     fun playTTS(context: Context, voice: String, playerListener: PlayerListener) {
             if (isPlaying) {
                 releasePlayer()

@@ -1,9 +1,81 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.ProjectLibrary" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.ProjectLibrary" parent="Theme.MaterialComponents.Light.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:statusBarColor">@color/purple_200</item>
+
     </style>
 
     <style name="Theme.ProjectLibrary" parent="Base.Theme.ProjectLibrary" />
+
+    <style name="Text14GrayBot" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_regular</item>
+        <item name="android:textColor">@color/gray_chat_bot</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="Text10GrayOwnerTime" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_medium</item>
+        <item name="android:textColor">@color/gray_chat_owner</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="Text12GrayBotTime" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_medium</item>
+        <item name="android:textColor">@color/gray_chat_bot</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+
+    <style name="Text14GrayOwner" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_regular</item>
+        <item name="android:textColor">@color/gray_chat_owner</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="TextReg12Gray" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_regular</item>
+        <item name="android:textColor">@color/gray_font</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+
+    <style name="TextReg12White" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_regular</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="TextMed12White" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_medium</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="HintText" parent="TextAppearance.Design.Hint">
+        <item name="android:textSize">16sp</item>
+        <item name="android:fontFamily">@font/yekanbakh_fanum_medium</item>
+        <item name="android:textColor">@color/orange</item>
+    </style>
+
+    <style name="TextMed10Gray" parent="Widget.AppCompat.TextView">
+        <item name="android:fontFamily">@font/yekanbakh_fanum_medium</item>
+        <item name="android:textColor">@color/gray_chat_owner</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
 </resources>

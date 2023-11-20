@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ProjectLibrary</string>
+    <string name="hint_edittext">پیام خود را اینجا بنویسید</string>
+    <string name="is_typing_text">در حال پاسخگویی</string>
 </resources>
