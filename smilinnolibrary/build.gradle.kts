@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    `maven-publish`
 }
 
 android {
@@ -17,10 +18,8 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            consumerProguardFiles("proguard-rules.pro", "consumer-rules.pro")
         }
     }
     compileOptions {
@@ -32,6 +31,11 @@ android {
     }
     kotlin {
         jvmToolchain(18)
+    }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(18)        // << --- ADD This
+        }
     }
 }
 
@@ -55,4 +59,21 @@ dependencies {
     //gson converter
     api("com.squareup.retrofit2:converter-gson:2.7.1")
 
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.github.hossein69ameri"
+            artifactId = "assistant"
+            version = "1.0"
+
+            pom {
+                description.set("First Android Library")
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
 }
