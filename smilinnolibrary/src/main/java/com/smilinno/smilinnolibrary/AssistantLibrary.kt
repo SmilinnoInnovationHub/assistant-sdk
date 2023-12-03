@@ -1,16 +1,26 @@
 package com.smilinno.smilinnolibrary
 
+import android.app.Activity
+import android.app.Application
 import android.content.Context
 import com.smilinno.smilinnolibrary.callback.PlayerListener
 import com.smilinno.smilinnolibrary.callback.AssistantListener
+import com.smilinno.smilinnolibrary.callback.StreamVoiceListener
 import com.smilinno.smilinnolibrary.callback.VoiceToTextListener
 import com.smilinno.smilinnolibrary.callback.TextToVoiceListener
 import com.smilinno.smilinnolibrary.util.HubUtil
 import com.smilinno.smilinnolibrary.util.PlayerUtil
+import com.smilinno.smilinnolibrary.util.WebSocketClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.webrtc.PeerConnection
 
 class AssistantLibrary private constructor(private val builder: Builder) {
+
+    fun startWebSocket(context: Activity, param: StreamVoiceListener) {
+        WebSocketClient.connect(token,context)
+        WebSocketClient.streamVoiceListener = param
+    }
 
     /**
      * Sends a voice message to the assistant.

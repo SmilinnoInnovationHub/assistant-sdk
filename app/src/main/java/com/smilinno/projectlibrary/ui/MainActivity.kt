@@ -1,12 +1,8 @@
 package com.smilinno.projectlibrary.ui
 
 import PermissionManager
-import android.Manifest
 import android.annotation.SuppressLint
-import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
@@ -17,15 +13,11 @@ import android.util.Log
 import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.snackbar.Snackbar
 import com.microsoft.signalr.HubConnectionState
 import com.smilinno.projectlibrary.adapter.ChatAdapter
 import com.smilinno.projectlibrary.databinding.ActivityMainNewBinding
@@ -35,6 +27,7 @@ import com.smilinno.projectlibrary.util.hideKeyboard
 import com.smilinno.projectlibrary.util.showSnackBar
 import com.smilinno.smilinnolibrary.AssistantLibrary
 import com.smilinno.smilinnolibrary.callback.AssistantListener
+import com.smilinno.smilinnolibrary.callback.StreamVoiceListener
 import com.smilinno.smilinnolibrary.callback.VoiceToTextListener
 import com.smilinno.smilinnolibrary.model.MessageResponse
 import com.smilinno.smilinnolibrary.model.MessageType
@@ -77,7 +70,38 @@ class MainActivity : AppCompatActivity() {
         bindAssistant()
         bindRecyclerView()
         showCallBack()
+        setupWebSocket()
     }
+
+    private fun setupWebSocket() {
+        binding.send.setOnClickListener {
+            if (permissionManager.checkRecordAudioPermissionRequest(this@MainActivity)) {
+                assistantLibrary.startWebSocket(this,object : StreamVoiceListener{
+                    override fun onReadyForSpeech() {
+
+                    }
+
+                    override fun onEndOfSpeech(reason: String) {
+
+                    }
+
+                    override fun onError(e: Throwable) {
+
+                    }
+
+                    override fun onResults(text: String) {
+
+                    }
+
+                    override fun onPartialResults(hex: String) {
+
+                    }
+
+                })
+            }
+        }
+    }
+
 
 
     private fun bindSend() = with(binding.sendChat) {
@@ -328,4 +352,10 @@ class MainActivity : AppCompatActivity() {
         recognizerIntent = null
         super.onStop()
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+//        assistantLibrary.disconnectWebSocket()
+    }
+
 }

@@ -76,6 +76,9 @@ dependencies {
     //lottie
     implementation("com.airbnb.android:lottie:4.1.0")
 
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.6")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.6")
+
 }
 
 kapt {

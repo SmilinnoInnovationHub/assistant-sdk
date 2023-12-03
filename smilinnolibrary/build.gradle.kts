@@ -59,6 +59,9 @@ dependencies {
     //gson converter
     api("com.squareup.retrofit2:converter-gson:2.7.1")
 
+    api("com.squareup.okhttp3:okhttp:5.0.0-alpha.6")
+    api("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.6")
+
 }
 
 publishing {

@@ -38,7 +38,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="26dp"
         app:boxBackgroundColor="@color/box_background_color"
         app:boxCornerRadiusBottomEnd="15dp"
         app:boxCornerRadiusBottomStart="15dp"
@@ -48,7 +47,7 @@
         app:boxStrokeWidth="1dp"
         app:hintEnabled="false"
         app:hintTextColor="@color/gray_chat_owner"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/send"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -56,11 +55,11 @@
             android:id="@+id/chatEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="50dp"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:fontFamily="@font/yekanbakh_fanum_medium"
-            android:hint="@string/hint_edittext" />
+            android:hint="@string/hint_edittext"
+            android:paddingStart="50dp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -146,5 +145,14 @@
         app:layout_constraintTop_toTopOf="@id/editTxtLay"
         app:layout_constraintBottom_toBottomOf="@id/editTxtLay"
         app:layout_constraintLeft_toLeftOf="@id/editTxtLay"/>
+
+    <Button
+        android:id="@+id/send"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="WEBSocket"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
