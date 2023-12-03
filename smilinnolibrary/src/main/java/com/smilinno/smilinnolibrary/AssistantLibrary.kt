@@ -13,7 +13,6 @@ import com.smilinno.smilinnolibrary.util.PlayerUtil
 import com.smilinno.smilinnolibrary.util.WebSocketClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.webrtc.PeerConnection
 
 class AssistantLibrary private constructor(private val builder: Builder) {
 
