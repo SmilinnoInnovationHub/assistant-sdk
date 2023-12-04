@@ -12,6 +12,7 @@ import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.view.View.GONE
+import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -22,7 +23,6 @@ import com.microsoft.signalr.HubConnectionState
 import com.smilinno.projectlibrary.adapter.ChatAdapter
 import com.smilinno.projectlibrary.databinding.ActivityMainNewBinding
 import com.smilinno.projectlibrary.model.Chat
-import com.smilinno.projectlibrary.util.PlayerApp
 import com.smilinno.projectlibrary.util.hideKeyboard
 import com.smilinno.projectlibrary.util.showSnackBar
 import com.smilinno.smilinnolibrary.AssistantLibrary
@@ -41,9 +41,12 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 import javax.inject.Inject
+import kotlin.text.StringBuilder
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    private var partialText: String = ""
+    private var resultText = StringBuilder()
     private val TAG: String = MainActivity::class.java.name
     private var mRecorder: MediaRecorder? = null
     private var audioFilePath: String? = null
@@ -70,39 +73,8 @@ class MainActivity : AppCompatActivity() {
         bindAssistant()
         bindRecyclerView()
         showCallBack()
-        setupWebSocket()
+        stopClick()
     }
-
-    private fun setupWebSocket() {
-        binding.send.setOnClickListener {
-            if (permissionManager.checkRecordAudioPermissionRequest(this@MainActivity)) {
-                assistantLibrary.startWebSocket(this,object : StreamVoiceListener{
-                    override fun onReadyForSpeech() {
-
-                    }
-
-                    override fun onEndOfSpeech(reason: String) {
-
-                    }
-
-                    override fun onError(e: Throwable) {
-
-                    }
-
-                    override fun onResults(text: String) {
-
-                    }
-
-                    override fun onPartialResults(hex: String) {
-
-                    }
-
-                })
-            }
-        }
-    }
-
-
 
     private fun bindSend() = with(binding.sendChat) {
         setOnClickListener {
@@ -118,8 +90,9 @@ class MainActivity : AppCompatActivity() {
                     if (chatAdapter.itemCount > 0) {
                         binding.listChat.smoothScrollToPosition(0)
                     }
-                    sendChatClick(binding.chatEditText.text.toString())
+                    sendChat(binding.chatEditText.text.toString())
                     showIsTyping(true)
+                    resultText.setLength(0)
                 }
             } else {
                 binding.root.showSnackBar("لطفا پس از اتصال مجدد تلاش کنید")
@@ -127,17 +100,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendChatClick(text : String) {
-        PlayerApp.releasePlayer()
-        speech?.stopListening()
+    private fun sendChat(text : String) {
         if (text.trim().isNotEmpty()) {
             binding.root.hideKeyboard()
             assistantLibrary.sendTextToAssistant(text)
             binding.chatEditText.text?.clear()
-            isRecognizerActivate = false
         }
     }
 
+    private fun stopClick() {
+        binding.stopAnimationContainer.setOnClickListener {
+            assistantLibrary.disconnectWebSocket()
+            it.visibility = GONE
+            binding.sendVoice.visibility = GONE
+            binding.sendChat.visibility = VISIBLE
+        }
+    }
     @RequiresApi(Build.VERSION_CODES.M)
     @SuppressLint("ClickableViewAccessibility")
     private fun bindAssistant() = with(binding.sendVoice) {
@@ -145,7 +123,47 @@ class MainActivity : AppCompatActivity() {
             if (assistantLibrary.isConnected()) {
                 binding.chatEditText.setText("")
                 if (permissionManager.checkRecordAudioPermissionRequest(this@MainActivity)) {
-                    recorderAssistant()
+                    assistantLibrary.startWebSocket(this@MainActivity,
+                        object : StreamVoiceListener {
+                            override fun onReadyForSpeech() {
+                                visibility = GONE
+                                binding.sendChat.visibility = GONE
+                                binding.stopAnimationContainer.visibility = View.VISIBLE
+                            }
+
+                            override fun onEndOfSpeech(reason: String) {
+                                if (binding.chatEditText.text?.isEmpty() == true){
+                                    visibility = VISIBLE
+                                    binding.sendChat.visibility = GONE
+                                    binding.stopAnimationContainer.visibility = View.GONE
+                                } else {
+                                    visibility = GONE
+                                    binding.sendChat.visibility = VISIBLE
+                                    binding.stopAnimationContainer.visibility = View.GONE
+                                }
+                            }
+
+                            override fun onError(e: Throwable) {
+
+                            }
+
+                            override fun onResults(text: String) {
+                                resultText = StringBuilder().append(resultText).append(text).append(" ")
+                                visibility = GONE
+                                binding.sendChat.visibility = GONE
+                                binding.stopAnimationContainer.visibility = View.VISIBLE
+                            }
+
+                            @SuppressLint("SetTextI18n")
+                            override fun onPartialResults(text: String) {
+                                partialText = text
+                                binding.chatEditText.setText(" $resultText $partialText ")
+                                visibility = GONE
+                                binding.sendChat.visibility = GONE
+                                binding.stopAnimationContainer.visibility = View.VISIBLE
+                            }
+
+                        })
                 }
             } else {
                 binding.root.showSnackBar("لطفا پس از اتصال مجدد تلاش کنید")
@@ -160,6 +178,7 @@ class MainActivity : AppCompatActivity() {
                 if (it.isEmpty()) {
                     binding.sendChat.visibility = GONE
                     binding.sendVoice.visibility = VISIBLE
+                    resultText.setLength(0)
                 } else {
                     binding.sendVoice.visibility = GONE
                     binding.sendChat.visibility = VISIBLE
@@ -220,118 +239,6 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun recorderAssistant() {
-        if (timerHasFinished) {
-            releaseRecorder()
-            cTimer?.start()
-            timerHasFinished = false
-            initMediaRecorder()
-            startRecordTime = System.currentTimeMillis()
-            binding.micAnimationContainer.visibility = View.VISIBLE
-        } else {
-            stopMic()
-        }
-    }
-
-    private fun releaseRecorder() {
-        try {
-            if (mRecorder != null) {
-                mRecorder?.stop()
-                mRecorder?.reset()
-                mRecorder?.release()
-                mRecorder = null
-            }
-        } catch (e: java.lang.Exception) {
-            Log.e(TAG, "releaseRecorder: ", e)
-        }
-    }
-
-    private var cTimer: CountDownTimer? = object :
-        CountDownTimer(11000, 1000) {
-        override fun onTick(millisUntilFinished: Long) {
-
-        }
-
-        override fun onFinish() {
-            timerHasFinished = true
-            binding.micAnimationContainer.visibility = View.INVISIBLE
-            stopMic()
-        }
-    }
-
-    private fun initMediaRecorder() {
-        audioFilePath = this
-            .getExternalFilesDir(null)?.absolutePath + "/" + "zich.3gp"
-        try {
-            mRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                MediaRecorder(this)
-            } else {
-                MediaRecorder()
-            }
-            mRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
-            mRecorder?.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            mRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            mRecorder?.setAudioSamplingRate(16000)
-            mRecorder?.setOutputFile(audioFilePath)
-            mRecorder?.prepare()
-            mRecorder?.start()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun stopMic() {
-        if (permissionManager.isRecordAudioPermissionGranted()) {
-            binding.micAnimationContainer.visibility = View.INVISIBLE
-            if (System.currentTimeMillis() < startRecordTime + recordDelayTime) {
-                lifecycleScope.launch {
-                    cTimer?.cancel()
-                    timerHasFinished = true
-                    delay(300)
-                    releaseRecorder()
-                }
-            } else {
-                releaseRecorder()
-                cTimer?.cancel()
-                timerHasFinished = true
-                var audioBase64: String? = null
-                if (audioFilePath != null) {
-                    audioBase64 = getAudioBase64()
-                }
-                if (audioBase64 != null) {
-                    assistantLibrary.sendVoiceToGetText(audioBase64,object : VoiceToTextListener {
-                        override fun onTextReceive(message: MessageVoiceToText) {
-                            lifecycleScope.launch(Dispatchers.Main) {
-                                binding.chatEditText.setText(message.text)
-                            }
-                        }
-                        override fun onError(e: Exception) {
-                            binding.root.showSnackBar(e.toString())
-                        }
-                    })
-                }
-            }
-        }
-    }
-
-    private fun getAudioBase64(): String? {
-        val inputStream: InputStream = FileInputStream(audioFilePath)
-        val myByteArray = getBytesFromInputStream(inputStream)
-        return Base64.encodeToString(myByteArray, Base64.DEFAULT)
-    }
-
-    @Throws(IOException::class)
-    private fun getBytesFromInputStream(`is`: InputStream): ByteArray? {
-        val os = ByteArrayOutputStream()
-        val buffer = ByteArray(0xFFFF)
-        var len: Int = `is`.read(buffer)
-        while (len != -1) {
-            os.write(buffer, 0, len)
-            len = `is`.read(buffer)
-        }
-        return os.toByteArray()
-    }
-
     private fun showIsTyping(visibility: Boolean) {
         if (visibility) {
             binding.isTypingContainer.visibility = VISIBLE
@@ -346,16 +253,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStop() {
-        speech?.destroy()
-        speech = null
-        recognizerIntent = null
-        super.onStop()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
-//        assistantLibrary.disconnectWebSocket()
+        assistantLibrary.disconnectWebSocket()
     }
+
+    //    private fun setupWebSocket() {
+//        binding.send.setOnClickListener {
+//            if (permissionManager.checkRecordAudioPermissionRequest(this@MainActivity)) {
+//                assistantLibrary.startWebSocket(this,object : StreamVoiceListener{
+//                    override fun onReadyForSpeech() {
+//
+//                    }
+//
+//                    override fun onEndOfSpeech(reason: String) {
+//
+//                    }
+//
+//                    override fun onError(e: Throwable) {
+//
+//                    }
+//
+//                    override fun onResults(text: String) {
+//                        resultText = StringBuilder().append(resultText).append(text).append(" ")
+//                        Log.e(TAG, "resultText: $resultText ", )
+//                    }
+//
+//                    @SuppressLint("SetTextI18n")
+//                    override fun onPartialResults(text: String) {
+//                        partialText = text
+//                        Log.e(TAG, "onPartialResults: $partialText", )
+//                        binding.chatEditText.setText(" $resultText $partialText ")
+//                    }
+//
+//                })
+//            }
+//        }
+//    }
 
 }

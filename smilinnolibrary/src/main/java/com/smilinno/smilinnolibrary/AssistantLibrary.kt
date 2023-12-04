@@ -21,6 +21,10 @@ class AssistantLibrary private constructor(private val builder: Builder) {
         WebSocketClient.streamVoiceListener = param
     }
 
+    fun disconnectWebSocket() {
+        WebSocketClient.disconnectWebSocket()
+    }
+
     /**
      * Sends a voice message to the assistant.
      *

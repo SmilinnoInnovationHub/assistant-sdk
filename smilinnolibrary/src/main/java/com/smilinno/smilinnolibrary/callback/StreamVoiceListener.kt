@@ -8,6 +8,6 @@ interface StreamVoiceListener {
     fun onEndOfSpeech(reason: String)
     fun onError(e : Throwable)
     fun onResults(text: String)
-    fun onPartialResults(hex: String)
+    fun onPartialResults(text : String)
 
 }

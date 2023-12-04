@@ -46,8 +46,10 @@
         app:boxStrokeColor="@color/black"
         app:boxStrokeWidth="1dp"
         app:hintEnabled="false"
+        android:maxHeight="100dp"
+        android:layout_marginBottom="16dp"
         app:hintTextColor="@color/gray_chat_owner"
-        app:layout_constraintBottom_toTopOf="@+id/send"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -55,6 +57,7 @@
             android:id="@+id/chatEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:maxHeight="100dp"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:fontFamily="@font/yekanbakh_fanum_medium"
@@ -146,13 +149,29 @@
         app:layout_constraintBottom_toBottomOf="@id/editTxtLay"
         app:layout_constraintLeft_toLeftOf="@id/editTxtLay"/>
 
-    <Button
-        android:id="@+id/send"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="WEBSocket"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/stop_animation_container"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:visibility="gone"
+        android:layout_marginLeft="6dp"
+        app:layout_constraintTop_toTopOf="@id/editTxtLay"
+        app:layout_constraintBottom_toBottomOf="@id/editTxtLay"
+        app:layout_constraintLeft_toLeftOf="@id/editTxtLay">
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/stop_animation"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:lottie_rawRes="@raw/stop" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
