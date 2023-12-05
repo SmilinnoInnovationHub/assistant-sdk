@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 
 internal object WebSocketClient {
     private lateinit var recordChunkAudio: ByteArray
-    private lateinit var webSocket: WebSocket
+    private var webSocket: WebSocket? = null
     var streamVoiceListener: StreamVoiceListener? = null
     private var isRecording = false
     private val sampleRate = 16000
@@ -48,7 +48,7 @@ internal object WebSocketClient {
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
     private var audioRecord : AudioRecord? = null
-    private lateinit var recordingJob: Job
+    private var recordingJob: Job? = null
 
 
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -195,7 +195,7 @@ internal object WebSocketClient {
     private fun sendChunk() {
         CoroutineScope(Dispatchers.IO).launch {
             delay(500)
-            webSocket.send(recordChunkAudio.toByteString())
+            webSocket?.send(recordChunkAudio.toByteString())
             recordChunkAudio = ByteArray(bufferSize)
             if (isRecording){
                 sendChunk()
@@ -207,11 +207,11 @@ internal object WebSocketClient {
         isRecording = false
         val subjectSoes = SubjectSoeS(subject = "EOES")
         val jsonEoes = Gson().toJson(subjectSoes)
-        webSocket.send(jsonEoes)
+        webSocket?.send(jsonEoes)
         val subjectReQ = SubjectReQ(subject = "REQ", mode = "stream-custom-raw", guid = "", engine = "1", decodingInfo = SubjectReQ.DecodingInfo(sampleRate = 16000, refText = ""))
         val jsonReq = Gson().toJson(subjectReQ)
-        webSocket.send(jsonReq)
-        recordingJob.cancel()  // Cancel the recording coroutine
+        webSocket?.send(jsonReq)
+        recordingJob?.cancel()  // Cancel the recording coroutine
         audioRecord?.stop()
         audioRecord?.release()
     }
@@ -234,14 +234,16 @@ internal object WebSocketClient {
         isRecording = false
         val subjectSoes = SubjectSoeS(subject = "EOES")
         val jsonEoes = Gson().toJson(subjectSoes)
-        webSocket.send(jsonEoes)
+        webSocket?.send(jsonEoes)
         val subjectReQ = SubjectReQ(subject = "REQ", mode = "stream-custom-raw", guid = "", engine = "1", decodingInfo = SubjectReQ.DecodingInfo(sampleRate = 16000, refText = ""))
         val jsonReq = Gson().toJson(subjectReQ)
-        webSocket.send(jsonReq)
-        recordingJob.cancel()  // Cancel the recording coroutine
-        audioRecord?.stop()
-        audioRecord?.release()
-        webSocket.close(1000, "Closing the connection")
+        webSocket?.send(jsonReq)
+        recordingJob?.cancel()  // Cancel the recording coroutine
+        webSocket?.close(1000, "Closing the connection")
+        if (audioRecord?.state == AudioRecord.STATE_INITIALIZED){
+            audioRecord?.stop()
+            audioRecord?.release()
+        }
     }
 
 }

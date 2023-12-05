@@ -125,6 +125,7 @@ class MainActivity : AppCompatActivity() {
                 if (permissionManager.checkRecordAudioPermissionRequest(this@MainActivity)) {
                     assistantLibrary.startWebSocket(this@MainActivity,
                         object : StreamVoiceListener {
+
                             override fun onReadyForSpeech() {
                                 visibility = GONE
                                 binding.sendChat.visibility = GONE
@@ -157,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                             @SuppressLint("SetTextI18n")
                             override fun onPartialResults(text: String) {
                                 partialText = text
-                                binding.chatEditText.setText(" $resultText $partialText ")
+                                binding.chatEditText.setText("$resultText $partialText")
                                 visibility = GONE
                                 binding.sendChat.visibility = GONE
                                 binding.stopAnimationContainer.visibility = View.VISIBLE
