@@ -111,16 +111,19 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
                 binding.chatEditText.setText("")
                 if (permissionManager.checkRecordAudioPermissionRequest(this@MainActivity)) {
                     if (isInternalAsr) {
+                        isEnabled = false
                         assistantLibrary.startWebSocket(this@MainActivity,
                             object : StreamVoiceListener {
 
                                 override fun onReadyForSpeech() {
+                                    isEnabled = true
                                     visibility = GONE
                                     binding.sendChat.visibility = GONE
                                     binding.stopAnimationContainer.visibility = View.VISIBLE
                                 }
 
                                 override fun onEndOfSpeech(reason: String) {
+                                    isEnabled = true
                                     if (binding.chatEditText.text?.isEmpty() == true){
                                         visibility = VISIBLE
                                         binding.sendChat.visibility = GONE
@@ -133,10 +136,11 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
                                 }
 
                                 override fun onError(e: Throwable) {
-
+                                    isEnabled = true
                                 }
 
                                 override fun onResults(text: String) {
+                                    isEnabled = true
                                     resultText = StringBuilder().append(resultText).append(text).append(" ")
                                     visibility = GONE
                                     binding.sendChat.visibility = GONE
@@ -145,6 +149,7 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
 
                                 @SuppressLint("SetTextI18n")
                                 override fun onPartialResults(text: String) {
+                                    isEnabled = true
                                     partialText = text
                                     binding.chatEditText.setText("$resultText $partialText")
                                     visibility = GONE
