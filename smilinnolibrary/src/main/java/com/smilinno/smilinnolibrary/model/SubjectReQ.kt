@@ -4,6 +4,17 @@ package com.smilinno.smilinnolibrary.model
 import com.google.gson.annotations.SerializedName
 import androidx.annotation.Keep
 
+/**
+ * Data class representing a Subject Request.
+ *
+ * This class is annotated with @Keep to indicate that it should not be removed by code shrinking tools.
+ *
+ * @property decodingInfo Information about decoding.
+ * @property engine The engine associated with the subject request.
+ * @property guid The GUID (Globally Unique Identifier) associated with the subject request.
+ * @property mode The mode of the subject request (e.g., "stream-custom-raw").
+ * @property subject The subject of the request (e.g., "REQ").
+ */
 @Keep
 data class SubjectReQ(
     @SerializedName("decoding-info")

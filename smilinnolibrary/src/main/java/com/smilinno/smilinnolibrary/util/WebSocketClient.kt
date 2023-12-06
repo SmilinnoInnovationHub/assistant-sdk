@@ -50,7 +50,14 @@ internal object WebSocketClient {
     private var audioRecord : AudioRecord? = null
     private var recordingJob: Job? = null
 
-
+    /**
+     * This class represents a custom configuration for OkHttpClient.
+     * It includes settings such as read timeout, ping interval, and logging interceptor.
+     *
+     * @property client The configured OkHttpClient instance.
+     *
+     * @constructor Creates an instance of [CustomHttpClient].
+     */
     private val client: OkHttpClient = OkHttpClient.Builder()
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .pingInterval(10, TimeUnit.SECONDS)
@@ -59,6 +66,12 @@ internal object WebSocketClient {
         })
         .build()
 
+    /**
+     * Connects to the ASR server using the provided access token and activity.
+     *
+     * @param token The access token for authentication.
+     * @param activity The activity context associated with the WebSocket connection.
+     */
     fun connect(token: String, activity: Activity) {
         val request = Request.Builder()
             .url(ASR_HUB)
@@ -167,6 +180,22 @@ internal object WebSocketClient {
         })
     }
 
+    /**
+     * This data class represents a recording utility that captures audio input from the device's microphone
+     * and saves it to a PCM file. It utilizes Android's AudioRecord API for audio capturing.
+     *
+     * @property sampleRate The sample rate of the audio recording.
+     * @property channelConfig The configuration of audio channels (e.g., mono or stereo).
+     * @property audioFormat The audio format used for recording (e.g., 16-bit PCM encoding).
+     * @property bufferSize The size of the buffer used for audio recording.
+     *
+     * @constructor Creates an instance of the recording utility with the specified parameters.
+     *
+     * @param sampleRate The sample rate of the audio recording.
+     * @param channelConfig The configuration of audio channels (e.g., mono or stereo).
+     * @param audioFormat The audio format used for recording (e.g., 16-bit PCM encoding).
+     * @param bufferSize The size of the buffer used for audio recording.
+     */
     private fun startRecording(activity: Activity) {
         audioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, channelConfig, audioFormat, bufferSize)
         audioRecord?.startRecording()
@@ -192,6 +221,13 @@ internal object WebSocketClient {
         sendChunk()
     }
 
+    /**
+     * Sends an audio chunk over the WebSocket in a background coroutine.
+     *
+     * The method launches a coroutine in the IO dispatcher, delays for 500 milliseconds,
+     * sends the audio chunk, resets the chunk buffer, and recursively calls itself if
+     * recording is still in progress.
+     */
     private fun sendChunk() {
         CoroutineScope(Dispatchers.IO).launch {
             delay(500)
@@ -203,6 +239,12 @@ internal object WebSocketClient {
         }
     }
 
+    /**
+     * Stops the ongoing audio recording.
+     *
+     * This method sets the [isRecording] flag to false, sends recorded data over the WebSocket connection
+     * in the form of JSON, and cancels the recording coroutine. It also stops and releases the AudioRecord instance.
+     */
     fun stopRecording() {
         isRecording = false
         val subjectSoes = SubjectSoeS(subject = "EOES")
@@ -230,6 +272,11 @@ internal object WebSocketClient {
         }
     }
 
+    /**
+     * Disconnects the WebSocket, stops recording, and performs cleanup operations.
+     * Specifically, it sends EOES and REQ messages, cancels the recording coroutine,
+     * and closes the WebSocket connection along with releasing the AudioRecord resources.
+     */
     fun disconnectWebSocket() {
         isRecording = false
         val subjectSoes = SubjectSoeS(subject = "EOES")

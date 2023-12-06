@@ -16,11 +16,23 @@ import kotlinx.coroutines.runBlocking
 
 class AssistantLibrary private constructor(private val builder: Builder) {
 
+    /**
+     * Starts a WebSocket connection using the provided [context] and sets the [param] as the StreamVoiceListener.
+     *
+     * @param context The activity context used to initiate the WebSocket connection.
+     * @param param The StreamVoiceListener to be set for handling voice stream events.
+     */
     fun startWebSocket(context: Activity, param: StreamVoiceListener) {
         WebSocketClient.connect(token,context)
         WebSocketClient.streamVoiceListener = param
     }
 
+    /**
+     * Disconnects the WebSocket connection.
+     * This function calls the [WebSocketClient.disconnectWebSocket] method to close the WebSocket connection.
+     *
+     * @see WebSocketClient.disconnectWebSocket
+     */
     fun disconnectWebSocket() {
         WebSocketClient.disconnectWebSocket()
     }
