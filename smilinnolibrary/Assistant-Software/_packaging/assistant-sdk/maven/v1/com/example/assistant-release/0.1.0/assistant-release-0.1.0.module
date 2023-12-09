@@ -1,0 +1,207 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.example",
+    "module": "assistant-release",
+    "version": "0.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "com.google.android.exoplayer",
+          "module": "exoplayer",
+          "version": {
+            "requires": "2.18.3"
+          }
+        },
+        {
+          "group": "com.microsoft.signalr",
+          "module": "signalr",
+          "version": {
+            "requires": "7.0.0"
+          }
+        },
+        {
+          "group": "org.slf4j",
+          "module": "slf4j-jdk14",
+          "version": {
+            "requires": "1.7.25"
+          }
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.9.0"
+          }
+        },
+        {
+          "group": "com.squareup.retrofit2",
+          "module": "retrofit",
+          "version": {
+            "requires": "2.9.0"
+          }
+        },
+        {
+          "group": "com.squareup.retrofit2",
+          "module": "converter-gson",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "5.0.0-alpha.6"
+          }
+        },
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "logging-interceptor",
+          "version": {
+            "requires": "5.0.0-alpha.6"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.8.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "assistant-release-0.1.0.aar",
+          "url": "assistant-release-0.1.0.aar",
+          "size": 76817,
+          "sha512": "68d5c6d4c8c09f7f7a725972fcb4419a2f9697fed8c4d16d8662ed79fd38ac5ce385e20ef970295195b1d14c2234b0f309b21bdb5307e4dc4faf0bab45e7b0f2",
+          "sha256": "ceb11f02ddd0e9e2dfeb2071ef73c75890ec24e565615a602d33b6371819cda9",
+          "sha1": "09c2eb8871ad8ac123daa103d19d97a59c5a9c79",
+          "md5": "62c00fac0d7dbffb1dc280de1148d065"
+        }
+      ]
+    },
+    {
+      "name": "releaseRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "androidx.core",
+          "module": "core-ktx",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "androidx.appcompat",
+          "module": "appcompat",
+          "version": {
+            "requires": "1.6.1"
+          }
+        },
+        {
+          "group": "com.google.android.material",
+          "module": "material",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "com.google.android.exoplayer",
+          "module": "exoplayer",
+          "version": {
+            "requires": "2.18.3"
+          }
+        },
+        {
+          "group": "com.microsoft.signalr",
+          "module": "signalr",
+          "version": {
+            "requires": "7.0.0"
+          }
+        },
+        {
+          "group": "org.slf4j",
+          "module": "slf4j-jdk14",
+          "version": {
+            "requires": "1.7.25"
+          }
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.9.0"
+          }
+        },
+        {
+          "group": "com.squareup.retrofit2",
+          "module": "retrofit",
+          "version": {
+            "requires": "2.9.0"
+          }
+        },
+        {
+          "group": "com.squareup.retrofit2",
+          "module": "converter-gson",
+          "version": {
+            "requires": "2.7.1"
+          }
+        },
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "okhttp",
+          "version": {
+            "requires": "5.0.0-alpha.6"
+          }
+        },
+        {
+          "group": "com.squareup.okhttp3",
+          "module": "logging-interceptor",
+          "version": {
+            "requires": "5.0.0-alpha.6"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.8.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "assistant-release-0.1.0.aar",
+          "url": "assistant-release-0.1.0.aar",
+          "size": 76817,
+          "sha512": "68d5c6d4c8c09f7f7a725972fcb4419a2f9697fed8c4d16d8662ed79fd38ac5ce385e20ef970295195b1d14c2234b0f309b21bdb5307e4dc4faf0bab45e7b0f2",
+          "sha256": "ceb11f02ddd0e9e2dfeb2071ef73c75890ec24e565615a602d33b6371819cda9",
+          "sha1": "09c2eb8871ad8ac123daa103d19d97a59c5a9c79",
+          "md5": "62c00fac0d7dbffb1dc280de1148d065"
+        }
+      ]
+    }
+  ]
+}

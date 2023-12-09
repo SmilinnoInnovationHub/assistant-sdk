@@ -1,8 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     `maven-publish`
 }
+//val keystorePropertiesFile = rootProject.file("azure-configs.properties")
+//val keystoreProperties = Properties().apply {
+//    load(keystorePropertiesFile.inputStream())
+//}
+
 
 android {
     namespace = "com.smilinno.smilinnolibrary"
@@ -64,19 +71,30 @@ dependencies {
 
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = "com.github.hossein69ameri"
-            artifactId = "assistant"
-            version = "1.0"
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            create<MavenPublication>("release") {
+                // Applies the component for the release build variant.
+                from(components["release"])
 
-            pom {
-                description.set("First Android Library")
+                // You can then customize attributes of the publication as shown below.
+                groupId = "com.smilinno.smilinnolibrary" //<GROUP_ID>
+                artifactId = "assistant-release" //<ARTIFACT_ID>
+                version = "1.0.0" // Your package version
             }
         }
-    }
-    repositories {
-        mavenLocal()
+        // Repositories to which Gradle can publish artifacts
+        repositories {
+            maven {
+                url = uri("https://azure.smilinno-dev.com/Smilinno/Assistant-Software/_packaging/assistant-sdk/maven/v1")
+//                credentials {
+//                    username = keystoreProperties["userName"] as? String
+//                    password = keystoreProperties["azureMavenAccessToken"] as? String
+//                }
+            }
+        }
+
     }
 }
