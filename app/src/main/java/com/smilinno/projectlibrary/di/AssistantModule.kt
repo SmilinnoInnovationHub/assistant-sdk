@@ -18,7 +18,7 @@ class AssistantModule {
     @Provides
     fun provideAssistantSDK(@ApplicationContext context: Context): AssistantLibrary {
         return AssistantLibrary.Builder(context)
-            .setToken("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6InRlc3RAZ21haWwuY29tIiwiZW1haWwiOiJ0ZXN0QGdtYWlsLmNvbSIsIm5hbWVpZCI6IjMyMzdiZGRjLWYxMTYtNDkwMi1iM2UyLTVhODYzZjU5M2MwZiIsInJvbGUiOiJVU0VSIiwibmJmIjoxNzAxMjU3MDAwLCJleHAiOjE3MDE4NjE4MDAsImlhdCI6MTcwMTI1NzAwMCwiaXNzIjoiZW50ZXJwcmlzZS1pZGVudGl0eSIsImF1ZCI6IkFkbWluUG9ydGFsIn0.5-V3Kg-__mG6l4VAsxy5bsDAkh7Pf-aXM0VrXWyBcmM")
+            .setToken("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImhhbWhvdXNoQGdtYWlsLmNvbSIsImVtYWlsIjoiaGFtaG91c2hAZ21haWwuY29tIiwibmFtZWlkIjoiYTFjZDkyMTgtNDI4MS00Nzc1LWExZDMtMjA0OGM0NDE4YmMxIiwicm9sZSI6IlVTRVIiLCJuYmYiOjE3MDE3NjE5NzksImV4cCI6MTcwMjM2Njc3OSwiaWF0IjoxNzAxNzYxOTc5LCJpc3MiOiJlbnRlcnByaXNlLWlkZW50aXR5IiwiYXVkIjoiQWRtaW5Qb3J0YWwifQ.dOCpaU6eSsnrkqELXpE-roj2D5jVDxg2ye8o013vkmE")
             .setPublisher("sdk")
             .setClientId("")
             .isTtsEnabled(true)
