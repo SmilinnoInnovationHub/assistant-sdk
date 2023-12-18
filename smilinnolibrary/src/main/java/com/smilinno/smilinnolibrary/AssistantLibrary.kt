@@ -27,6 +27,10 @@ class AssistantLibrary private constructor(private val builder: Builder) {
         WebSocketClient.streamVoiceListener = param
     }
 
+    fun startRecording(activity: Activity){
+        WebSocketClient.startRecording(activity)
+    }
+
     /**
      * Disconnects the WebSocket connection.
      * This function calls the [WebSocketClient.disconnectWebSocket] method to close the WebSocket connection.

@@ -111,15 +111,20 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
                 binding.chatEditText.setText("")
                 if (permissionManager.checkRecordAudioPermissionRequest(this@MainActivity)) {
                     if (isInternalAsr) {
+                        assistantLibrary.startRecording(this@MainActivity)
+                        isEnabled = true
+                        visibility = GONE
+                        binding.sendChat.visibility = GONE
+                        binding.stopAnimationContainer.visibility = View.VISIBLE
                         isEnabled = false
                         assistantLibrary.startWebSocket(this@MainActivity,
                             object : StreamVoiceListener {
 
                                 override fun onReadyForSpeech() {
-                                    isEnabled = true
-                                    visibility = GONE
-                                    binding.sendChat.visibility = GONE
-                                    binding.stopAnimationContainer.visibility = View.VISIBLE
+//                                    isEnabled = true
+//                                    visibility = GONE
+//                                    binding.sendChat.visibility = GONE
+//                                    binding.stopAnimationContainer.visibility = View.VISIBLE
                                 }
 
                                 override fun onEndOfSpeech(reason: String) {

@@ -35,6 +35,7 @@ import okio.ByteString.Companion.toByteString
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
 
@@ -49,6 +50,8 @@ internal object WebSocketClient {
     private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
     private var audioRecord : AudioRecord? = null
     private var recordingJob: Job? = null
+    private var isConnected: Boolean = false
+    private var chunkFifoList: LinkedList<ByteArray> = LinkedList<ByteArray>()
 
     /**
      * This class represents a custom configuration for OkHttpClient.
@@ -80,6 +83,7 @@ internal object WebSocketClient {
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 super.onOpen(webSocket, response)
+                isConnected = true
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -122,7 +126,7 @@ internal object WebSocketClient {
                     SOES_RESPONSE -> {
                         // here session is started
                         Log.e("WebSocketClient", "onMessage1 SOES_RESPONSE : Session Started...$text")
-                        startRecording(activity)
+
                     }
 
                     NO_USAGE_REMAINED -> {
@@ -159,6 +163,7 @@ internal object WebSocketClient {
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
                 super.onClosing(webSocket, code, reason)
+                isConnected = false
                 Log.e("WebSocketClient", "onClosing: $reason")
             }
 
@@ -168,6 +173,7 @@ internal object WebSocketClient {
                 CoroutineScope(Dispatchers.Main).launch {
                     streamVoiceListener?.onEndOfSpeech(reason)
                 }
+                isConnected = false
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -176,6 +182,7 @@ internal object WebSocketClient {
                 CoroutineScope(Dispatchers.Main).launch {
                     streamVoiceListener?.onError(t)
                 }
+                isConnected = false
             }
         })
     }
@@ -196,7 +203,7 @@ internal object WebSocketClient {
      * @param audioFormat The audio format used for recording (e.g., 16-bit PCM encoding).
      * @param bufferSize The size of the buffer used for audio recording.
      */
-    private fun startRecording(activity: Activity) {
+     fun startRecording(activity: Activity) {
         audioRecord = AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, channelConfig, audioFormat, bufferSize)
         audioRecord?.startRecording()
         isRecording = true
@@ -218,6 +225,7 @@ internal object WebSocketClient {
             }
             outputStream.close()
         }
+        createChunk()
         sendChunk()
     }
 
@@ -230,11 +238,27 @@ internal object WebSocketClient {
      */
     private fun sendChunk() {
         CoroutineScope(Dispatchers.IO).launch {
-            delay(500)
-            webSocket?.send(recordChunkAudio.toByteString())
-            recordChunkAudio = ByteArray(bufferSize)
+            delay(100)
+            if (isConnected) {
+                if (chunkFifoList.size > 0) {
+                    val firstChunk = chunkFifoList.peek()
+                    webSocket?.send(firstChunk.toByteString())
+                    chunkFifoList.remove()
+                }
+            }
             if (isRecording){
                 sendChunk()
+            }
+        }
+    }
+
+    private fun createChunk() {
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(500)
+            chunkFifoList.add(recordChunkAudio)
+            recordChunkAudio = ByteArray(bufferSize)
+            if (isRecording){
+                createChunk()
             }
         }
     }
