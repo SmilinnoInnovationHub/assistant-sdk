@@ -66,3 +66,20 @@ dependencies {
     api("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.6")
 
 }
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.github.hossein69ameri"
+            artifactId = "assistant"
+            version = "1.0"
+
+            pom {
+                description.set("First Android Library")
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
