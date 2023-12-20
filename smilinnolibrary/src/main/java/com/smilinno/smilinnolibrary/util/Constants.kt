@@ -5,8 +5,8 @@ package com.smilinno.smilinnolibrary.util
  */
 internal object Constants {
     const val ERROR = "Error"
-    const val HUB_ADDRESS_NEW = "http://188.121.112.202:10000/assistanthub"
-    const val ASR_HUB = "ws://assistant.smilinno-dev.com/AsrHub"
+    const val HUB_ADDRESS_NEW = "https://assistant.smilinno-dev.com/assistanthub"
+    const val ASR_HUB = "https://assistant.smilinno-dev.com/AsrHub"
     const val AUTHORIZATION = "Authorization"
     const val SPEECHTOTEXT = "SpeechToText"
     const val TEXTTOSPEECH = "TextToSpeech"
